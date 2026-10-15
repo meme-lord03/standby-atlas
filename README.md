@@ -24,17 +24,19 @@ Every Southwest nonstop from Austin with things to do, places to eat, facts, fli
 4. Repo **Settings → Actions → General → Workflow permissions**: choose **Read and write permissions** so the daily refresh can save new counts.
 5. **Actions** tab → **Refresh flight counts** → **Run workflow** once to test it.
 
-### 2. Supabase (sync between phones)
+### 2. Supabase (the trip password and syncing)
 1. Create a free project at supabase.com.
-2. **SQL Editor**: paste `supabase/schema.sql`, change the two emails at the bottom, and run it.
-3. **Authentication → Email Templates → Magic Link**: make sure the email includes the code. Put `{{ .Token }}` in the template body, for example: `Your Standby Atlas code is {{ .Token }}`. The app signs in with this 6-digit code, because iPhone home-screen apps can't receive magic links.
-4. **Authentication → URL Configuration**: set Site URL to your GitHub Pages address.
-5. **Project Settings → API**: copy the Project URL and the `anon` public key into `config.js`. The anon key is designed to be public; the database rules only let your two emails read or write.
+2. **Authentication → Sign In / Providers**: turn **off** "Allow new users to sign up". Leave Email enabled.
+3. **Authentication → Users → Add user → Create new user**: enter a shared email (any address you control) and the trip password you want. Tick **Auto Confirm User**.
+4. **SQL Editor**: paste `supabase/schema.sql`, change the email at the bottom to that shared email, and run it.
+5. **Project Settings → API**: copy the Project URL and the `anon` public key. Put them, plus the shared email, in `config.js`. The anon key is designed to be public; only someone signed in with the trip password can read or change data.
+
+To lock everyone out, change the password under Authentication → Users. Everyone has to enter the new one.
 
 ### 3. Install on each iPhone
 1. Open the GitHub Pages address in **Safari**.
 2. Tap **Share → Add to Home Screen**.
-3. Open it from the home screen, tap the sync button (top right), enter your email and the code you receive.
+3. Open it from the home screen and enter the trip password. It stays signed in, including offline.
 4. Open Map view once while online so it's saved for offline use.
 
 ## How offline works

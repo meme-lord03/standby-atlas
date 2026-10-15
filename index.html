@@ -203,6 +203,12 @@ ol.list .note{display:block;color:var(--muted);font-size:14px}
 .syncsheet{position:fixed;left:50%;top:max(12vh,env(safe-area-inset-top,0px));transform:translateX(-50%);width:min(440px,calc(100% - 32px));z-index:41;background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:18px;display:grid;gap:10px}
 .syncsheet h3{font-family:var(--display);font-size:24px;margin:0}
 .srow{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+.lock{position:fixed;inset:0;z-index:60;background:var(--bg);display:flex;align-items:center;justify-content:center;padding:max(24px,env(safe-area-inset-top,0px)) max(16px,env(safe-area-inset-right,0px)) max(24px,env(safe-area-inset-bottom,0px)) max(16px,env(safe-area-inset-left,0px))}
+.lockcard{width:min(380px,100%);display:grid;gap:10px;justify-items:start}
+.lockcard h2{font-family:var(--display);font-weight:700;font-size:32px;margin:6px 0 0}
+.lockcard .search,.lockcard .dice{width:100%}
+.lockcard .dice{padding:11px 12px;font-size:15px}
+.lockcard .hubcode{font-size:40px}
 </style>
 
 <script src="config.js"></script>
@@ -260,10 +266,10 @@ ol.list .note{display:block;color:var(--muted);font-size:14px}
     <aside class="panel" id="panel" aria-live="polite"></aside>
   </div>
 
-  <p class="foot">Route list from Southwest (Oct 15, 2026). Flight counts refresh daily from published schedules and are kept on your phone for offline use. Ratings, notes and your counts save on this phone first and sync between your phones when you sign in. Restaurants open and close, so check hours before you go.</p>
+  <p class="foot">Route list from Southwest (Oct 15, 2026). Flight counts refresh daily from published schedules and are kept on your phone for offline use. Ratings, notes and your counts save on this phone first and sync to everyone signed in with the trip password. Restaurants open and close, so check hours before you go.</p>
 </div>
 
-<div class="scrim2" id="syncscrim" hidden></div><div class="syncsheet" id="syncsheet" hidden role="dialog" aria-label="Sync"></div>
+<div class="lock" id="lock" hidden></div><div class="scrim2" id="syncscrim" hidden></div><div class="syncsheet" id="syncsheet" hidden role="dialog" aria-label="Sync"></div>
 <script>
 const D=[];
 D.push(
@@ -783,7 +789,7 @@ function syncBadge(){
   const b=$("#syncbtn"); if(!b)return;
   let txt,st;
   if(!CFG.supabaseUrl){txt="On this phone";st="off"}
-  else if(!session){txt="Sign in to sync";st="off"}
+  else if(!session){txt="Not signed in";st="off"}
   else if(!navigator.onLine){txt=store.pending.length?`Offline · ${store.pending.length} to sync`:"Offline";st="warn"}
   else if(syncing){txt="Syncing…";st="on"}
   else if(store.pending.length){txt=`${store.pending.length} waiting to sync`;st="warn"}
@@ -792,53 +798,58 @@ function syncBadge(){
 }
 async function initStore(){
   mode="local"; applyStore(); refreshUI();
-  if(!CFG.supabaseUrl||!CFG.supabaseKey)return;
+  if(!CFG.supabaseUrl||!CFG.supabaseKey||!CFG.sharedEmail)return;
   try{
     if(!window.supabase)await loadScript("https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js");
     sb=window.supabase.createClient(CFG.supabaseUrl,CFG.supabaseKey,{auth:{persistSession:true,autoRefreshToken:true,storageKey:"aus-atlas-auth"}});
     const {data}=await sb.auth.getSession(); session=data.session||null;
-    sb.auth.onAuthStateChange((_e,s)=>{session=s||null;syncBadge();if(session)sync()});
-    syncBadge(); if(session)sync();
-  }catch(e){ console.warn("sync unavailable",e); syncBadge() }
+    sb.auth.onAuthStateChange((ev,s)=>{session=s||null;syncBadge();if(session)sync();if(ev==="SIGNED_OUT")showLock("Signed out. The password may have changed.")});
+    syncBadge(); if(session)sync(); else showLock();
+  }catch(e){ console.warn("sync unavailable",e); syncBadge(); if(!localStorage.getItem("aus-atlas-auth"))showLock() }
   addEventListener("online",sync); addEventListener("offline",syncBadge);
   document.addEventListener("visibilitychange",()=>{if(document.visibilityState==="visible")sync()});
   setInterval(()=>{if(document.visibilityState==="visible")sync()},90000);
 }
 
-/* sign-in sheet (email + 6-digit code, works inside the home-screen app) */
-function openSync(){
-  const d=$("#syncsheet"); d.hidden=false; $("#syncscrim").hidden=false;
-  renderSync();
+/* shared-password lock screen + sync sheet */
+function showLock(msg){
+  const l=$("#lock"); l.hidden=false;
+  l.innerHTML=`<div class="lockcard"><div class="hubcode" aria-hidden="true">AUS</div>
+    <h2>Standby Atlas</h2><p class="psub">Enter the trip password to open the app.</p>
+    <label class="plbl" for="lk-pw">Password</label>
+    <input id="lk-pw" class="search" type="password" autocomplete="current-password" enterkeyhint="go">
+    <button class="dice" id="lk-go">Open</button>
+    <p class="nstat" id="lk-msg">${msg?esc(msg):(navigator.onLine?"":"You're offline. Connect once to sign in; after that the app opens offline.")}</p></div>`;
+  setTimeout(()=>{const i=$("#lk-pw");if(i)i.focus()},50);
 }
+function hideLock(){const l=$("#lock");l.hidden=true;l.innerHTML=""}
+async function tryUnlock(){
+  const pw=$("#lk-pw").value; const m=$("#lk-msg"); if(!pw)return;
+  if(!sb){m.textContent="Can't reach the sign-in service. Check your connection and try again.";return}
+  m.textContent="Checking…";
+  const {data,error}=await sb.auth.signInWithPassword({email:CFG.sharedEmail,password:pw});
+  if(error){m.textContent=navigator.onLine?"That password didn't work.":"You're offline. Connect once to sign in.";return}
+  session=data.session; hideLock();
+  store.pending=[...new Set([...store.pending.map(p=>p.kind+"|"+p.code),...["ratings","notes","plan"].flatMap(k=>Object.keys(store[k]).map(c=>k+"|"+c))])].map(x=>{const [kind,code]=x.split("|");return {kind,code}});
+  saveLocal(); sync();
+}
+function openSync(){$("#syncsheet").hidden=false;$("#syncscrim").hidden=false;renderSync()}
 function closeSync(){$("#syncsheet").hidden=true;$("#syncscrim").hidden=true}
-function renderSync(msg){
+function renderSync(){
   const d=$("#syncsheet");
-  if(!CFG.supabaseUrl){d.innerHTML=`<h3>Sync isn't set up yet</h3><p class="psub">Ratings and notes are saved on this phone. Once the sync service is connected, you can sign in here to share them between phones.</p><button class="mini" id="syncclose">Close</button>`;return}
-  if(session){d.innerHTML=`<h3>Sync is on</h3><p class="psub">Signed in as ${esc(session.user?.email||"")}. Last synced ${ago(store.lastSync)}.${store.pending.length?` ${store.pending.length} change(s) waiting for a connection.`:""}</p>
-    <div class="srow"><button class="dice" id="syncnow">Sync now</button><button class="mini" id="signout">Sign out</button><button class="mini" id="syncclose">Close</button></div>`;return}
-  d.innerHTML=`<h3>Sync between your phones</h3><p class="psub">Enter your email. We'll send a 6-digit code.</p>
-    <label class="plbl" for="sy-email">Email</label><input id="sy-email" class="search" type="email" autocomplete="email" inputmode="email">
-    <div class="srow"><button class="dice" id="sendcode">Send code</button><button class="mini" id="syncclose">Close</button></div>
-    <label class="plbl" for="sy-code">Code from the email</label><input id="sy-code" class="search" inputmode="numeric" autocomplete="one-time-code" maxlength="10">
-    <div class="srow"><button class="dice" id="verify">Sign in</button></div>
-    <p class="nstat" id="symsg">${msg?esc(msg):""}</p>`;
+  if(!CFG.supabaseUrl){d.innerHTML=`<h3>Sync isn't set up yet</h3><p class="psub">Ratings and notes are saved on this phone for now.</p><div class="srow"><button class="mini" id="syncclose">Close</button></div>`;return}
+  d.innerHTML=`<h3>${session?"Sync is on":"Not signed in"}</h3><p class="psub">${session?`Last synced ${ago(store.lastSync)}.${store.pending.length?` ${store.pending.length} change(s) waiting for a connection.`:""}`:"Sign in with the trip password to sync."}</p>
+    <div class="srow">${session?`<button class="dice" id="syncnow">Sync now</button><button class="mini" id="signout">Sign out</button>`:""}<button class="mini" id="syncclose">Close</button></div>`;
 }
 document.addEventListener("click",async e=>{
   const id=e.target.id;
   if(id==="syncbtn"){openSync();return}
   if(id==="syncclose"||id==="syncscrim"){closeSync();return}
   if(id==="syncnow"){sync().then(()=>renderSync());return}
-  if(id==="signout"){await sb.auth.signOut();session=null;renderSync();syncBadge();return}
-  if(id==="sendcode"){const em=$("#sy-email").value.trim();if(!em)return;const m=$("#symsg");m.textContent="Sending…";
-    const {error}=await sb.auth.signInWithOtp({email:em,options:{shouldCreateUser:true}});
-    m.textContent=error?"Couldn't send the code. Check the email address and your connection.":"Code sent. Check your email.";return}
-  if(id==="verify"){const em=$("#sy-email").value.trim(),code=$("#sy-code").value.trim();const m=$("#symsg");m.textContent="Checking…";
-    const {data,error}=await sb.auth.verifyOtp({email:em,token:code,type:"email"});
-    if(error){m.textContent="That code didn't work. Codes expire after a few minutes, so send a new one.";return}
-    session=data.session;
-    store.pending=[...new Set([...store.pending.map(p=>p.kind+"|"+p.code),...["ratings","notes","plan"].flatMap(k=>Object.keys(store[k]).map(c=>k+"|"+c))])].map(s=>{const [kind,code]=s.split("|");return {kind,code}});
-    saveLocal(); await sync(); renderSync(); return}
+  if(id==="signout"){await sb.auth.signOut();session=null;closeSync();syncBadge();showLock("Signed out.");return}
+  if(id==="lk-go"){tryUnlock();return}
 });
+document.addEventListener("keydown",e=>{if(e.key==="Enter"&&e.target.id==="lk-pw")tryUnlock()});
 
 /* refresh schedule counts when online; keep the last copy for offline */
 const SKEY="aus-atlas-sched-v1";

@@ -1,6 +1,5 @@
--- AUS Standby Atlas: shared ratings, notes and flight counts for two people.
--- Paste this into Supabase > SQL Editor and click Run.
--- Then change the two emails at the bottom to yours and your girlfriend's, and run that part.
+-- AUS Standby Atlas: shared ratings, notes and flight counts behind one trip password.
+-- Paste this into Supabase > SQL Editor, change the email at the bottom to the shared login you created, and click Run.
 
 create table if not exists public.allowed_users (email text primary key);
 
@@ -30,8 +29,7 @@ begin
   end loop;
 end $$;
 
--- >>> Change these two emails, then run:
+-- >>> Change this to the shared login's email (the one you created under Authentication > Users):
 insert into public.allowed_users (email) values
-  ('you@example.com'),
-  ('her@example.com')
+  ('trips@example.com')
 on conflict do nothing;
