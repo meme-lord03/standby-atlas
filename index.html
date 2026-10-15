@@ -1,0 +1,1023 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#14202e">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="Standby Atlas">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+<link rel="icon" href="icons/icon-192.png">
+<style>:root{color-scheme:light;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}body{margin:0;font:14px system-ui,-apple-system,sans-serif}img{max-width:100%}[hidden]{display:none!important}</style>
+<title>AUS Standby Atlas</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700&family=Atkinson+Hyperlegible:wght@400;700&family=JetBrains+Mono:wght@500;700&display=swap">
+<style>
+/* Layout: an AUS hub at the top, a trunk line down the left, one branch per region with city tags; a detail panel slides in (side panel on desktop, bottom sheet on phone). */
+:root{
+  --bg:#eef2f6; --surface:#ffffff; --ink:#14202e; --muted:#5b6b7c; --line:#c9d3de;
+  --accent:#d98a16; --accent-ink:#7a4a05; --accent-soft:#fbecd3;
+  --sky:#2f6f9f; --sky-soft:#dde9f3; --leaf:#2f7d5b; --leaf-soft:#dcefe5; --rose:#a84a5b; --rose-soft:#f5e1e5;
+  --shade:rgba(20,32,46,.45);
+  --water:#d6e4ef; --land:#fbfcfd; --coast:#8ea4b8; --border:#6f8398; --state:#bccad7; --grid:rgba(47,111,159,.10); --maplbl:#5b6b7c; --olbl:#5d87a8;
+  --display:"Barlow Condensed","Arial Narrow",Arial,sans-serif;
+  --body:"Atkinson Hyperlegible",system-ui,-apple-system,Segoe UI,sans-serif;
+  --mono:"JetBrains Mono",ui-monospace,Menlo,Consolas,monospace;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#0f1720; --surface:#17222e; --ink:#e6edf4; --muted:#93a4b6; --line:#2c3b4b;
+  --accent:#f0a83a; --accent-ink:#ffd59a; --accent-soft:#3a2a12;
+  --sky:#7fb5e0; --sky-soft:#1c3346; --leaf:#7fcfa5; --leaf-soft:#173528; --rose:#e79aa9; --rose-soft:#3c2128;
+  --shade:rgba(0,0,0,.6); --water:#0b1823; --land:#1b2733; --coast:#40576c; --border:#6a8299; --state:#2f4254; --grid:rgba(127,181,224,.07); --maplbl:#8597a9; --olbl:#5f88a8; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#0f1720; --surface:#17222e; --ink:#e6edf4; --muted:#93a4b6; --line:#2c3b4b;
+  --accent:#f0a83a; --accent-ink:#ffd59a; --accent-soft:#3a2a12;
+  --sky:#7fb5e0; --sky-soft:#1c3346; --leaf:#7fcfa5; --leaf-soft:#173528; --rose:#e79aa9; --rose-soft:#3c2128;
+  --shade:rgba(0,0,0,.6); --water:#0b1823; --land:#1b2733; --coast:#40576c; --border:#6a8299; --state:#2f4254; --grid:rgba(127,181,224,.07); --maplbl:#8597a9; --olbl:#5f88a8; color-scheme:dark}
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--ink);font-family:var(--body);font-size:15px;line-height:1.5}
+.wrap{max-width:1180px;margin:0 auto;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:20px 48px}
+.layout{display:grid;grid-template-columns:minmax(0,1fr);gap:24px}
+@media (min-width:960px){.layout{grid-template-columns:minmax(0,1fr) 420px}}
+
+header.hub{display:flex;flex-wrap:wrap;align-items:flex-end;gap:12px 20px;padding-bottom:16px}
+.hubcode{font-family:var(--mono);font-weight:700;font-size:56px;line-height:1;letter-spacing:.02em;background:var(--ink);color:var(--bg);padding:8px 14px 6px;border-radius:6px}
+.hubtext h1{font-family:var(--display);font-weight:700;font-size:34px;line-height:1.05;margin:0;text-wrap:balance}
+.hubtext p{margin:4px 0 0;color:var(--muted)}
+.controls{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin:4px 0 18px}
+.search{flex:1 1 220px;min-width:0;font:inherit;padding:10px 12px;border:1px solid var(--line);border-radius:6px;background:var(--surface);color:var(--ink)}
+.search:focus-visible,button:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.filters{display:flex;flex-wrap:wrap;gap:6px}
+.chipbtn{font:inherit;font-size:13px;padding:7px 11px;border-radius:999px;border:1px solid var(--line);background:var(--surface);color:var(--ink);cursor:pointer}
+.chipbtn[aria-pressed="true"]{background:var(--ink);color:var(--bg);border-color:var(--ink)}
+.dice{font:inherit;font-size:13px;font-weight:700;padding:7px 12px;border-radius:999px;border:1px solid var(--accent);background:var(--accent-soft);color:var(--accent-ink);cursor:pointer}
+
+.tree{position:relative;padding-left:22px}
+.tree::before{content:"";position:absolute;left:6px;top:0;bottom:12px;border-left:2px dashed var(--line)}
+.branch{position:relative;margin-bottom:14px}
+.branch::before{content:"";position:absolute;left:-16px;top:20px;width:14px;border-top:2px dashed var(--line)}
+.bhead{display:flex;align-items:center;gap:10px;width:100%;text-align:left;font:inherit;background:none;border:0;color:var(--ink);padding:8px 0;cursor:pointer}
+.bhead h2{font-family:var(--display);font-weight:600;font-size:22px;letter-spacing:.01em;margin:0}
+.bcount{font-family:var(--mono);font-size:12px;color:var(--muted)}
+.caret{margin-left:auto;color:var(--muted);transition:transform .2s}
+.branch.closed .caret{transform:rotate(-90deg)}
+.branch.closed .cities{display:none}
+.cities{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:8px}
+.city{display:flex;flex-direction:column;gap:2px;text-align:left;font:inherit;background:var(--surface);border:1px solid var(--line);border-radius:6px;padding:9px 10px 8px;color:var(--ink);cursor:pointer;min-width:0;transition:border-color .15s,transform .15s}
+.city:hover{border-color:var(--accent);transform:translateY(-1px)}
+.city[aria-current="true"]{border-color:var(--accent);box-shadow:inset 0 0 0 1px var(--accent)}
+.city .code{font-family:var(--mono);font-weight:700;font-size:17px;letter-spacing:.04em}
+.city .nm{font-size:13px;color:var(--muted);overflow-wrap:anywhere}
+.tags{display:flex;gap:4px;flex-wrap:wrap;margin-top:3px}
+.tag{font-family:var(--mono);font-size:10px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;padding:1px 5px;border-radius:3px}
+.t-S{background:var(--sky-soft);color:var(--sky)} .t-N{background:var(--accent-soft);color:var(--accent-ink)}
+.t-P{background:var(--rose-soft);color:var(--rose)} .t-F{background:var(--leaf-soft);color:var(--leaf)}
+.empty{color:var(--muted);padding:12px 0}
+.legend{display:flex;flex-wrap:wrap;gap:10px;color:var(--muted);font-size:13px;margin:6px 0 16px}
+.legend span{display:flex;align-items:center;gap:5px}
+
+/* detail */
+.panel{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:18px 18px 20px;align-self:start}
+@media (min-width:960px){.panel{position:sticky;top:calc(env(safe-area-inset-top,0px) + 16px);max-height:calc(100vh - 32px);overflow:auto}}
+.board{display:flex;align-items:baseline;gap:12px;flex-wrap:wrap}
+.board .big{font-family:var(--mono);font-weight:700;font-size:40px;line-height:1;letter-spacing:.04em;color:var(--accent-ink);background:var(--accent-soft);padding:6px 10px 4px;border-radius:5px}
+.board .route{font-family:var(--mono);font-size:13px;color:var(--muted)}
+.panel h3{font-family:var(--display);font-weight:700;font-size:30px;line-height:1.05;margin:10px 0 2px;text-wrap:balance}
+.panel .where{color:var(--muted);margin:0}
+.tabs{display:grid;grid-template-columns:repeat(3,1fr);gap:4px;background:var(--bg);padding:4px;border-radius:8px;margin:16px 0 12px}
+.tab{font:inherit;font-weight:700;font-size:14px;padding:8px 6px;border:0;border-radius:6px;background:transparent;color:var(--muted);cursor:pointer}
+.tab[aria-selected="true"]{background:var(--surface);color:var(--ink);box-shadow:0 1px 2px rgba(0,0,0,.12)}
+ol.list{list-style:none;margin:0;padding:0;counter-reset:n;display:grid;gap:2px}
+ol.list li{counter-increment:n;display:grid;grid-template-columns:28px minmax(0,1fr);gap:8px;padding:8px 0;border-bottom:1px solid var(--line)}
+ol.list li:last-child{border-bottom:0}
+ol.list li::before{content:counter(n,decimal-leading-zero);font-family:var(--mono);font-size:12px;color:var(--muted);padding-top:2px}
+ol.list b{font-weight:700}
+ol.list .note{display:block;color:var(--muted);font-size:14px}
+.facts li::before{content:counter(n)!important}
+.hint{color:var(--muted);font-size:13px;margin:14px 0 0}
+.closebtn{display:none}
+.panel .placeholder{color:var(--muted)}
+
+@media (max-width:959px){
+  .scrim{position:fixed;inset:0;background:var(--shade);z-index:20}
+  .panel{position:fixed;left:0;right:0;bottom:0;z-index:21;max-height:86vh;overflow:auto;border-radius:16px 16px 0 0;
+    padding-left:max(18px,env(safe-area-inset-left,0px));padding-right:max(18px,env(safe-area-inset-right,0px));
+    padding-bottom:calc(24px + env(safe-area-inset-bottom,0px));transform:translateY(0);transition:transform .25s ease}
+  .panel.away{transform:translateY(105%)}
+  .closebtn{display:inline-flex;margin-left:auto;font:inherit;font-size:14px;font-weight:700;border:1px solid var(--line);background:var(--bg);color:var(--ink);border-radius:999px;padding:6px 12px;cursor:pointer}
+  .grab{width:40px;height:4px;border-radius:2px;background:var(--line);margin:-6px auto 12px}
+}
+@media (min-width:960px){.scrim,.grab{display:none}}
+@media (prefers-reduced-motion:reduce){*{transition:none!important}}
+.foot{color:var(--muted);font-size:13px;margin-top:22px;max-width:65ch}
+
+/* ratings */
+.crow{display:flex;align-items:center;gap:8px}
+.stars{--sz:12px;position:relative;display:inline-block;line-height:0;white-space:nowrap;flex:none}
+.stars .base,.stars .fill{display:flex}
+.stars .fill{position:absolute;top:0;left:0;bottom:0;overflow:hidden}
+.stars svg{flex:none;width:var(--sz);height:var(--sz)}
+.stars .base svg{fill:none;stroke:var(--muted);stroke-width:1.6;opacity:.7}
+.stars .fill svg{fill:var(--accent);stroke:var(--accent);stroke-width:1.6}
+.rnum{font-family:var(--mono);font-size:11px;color:var(--accent-ink)}
+.rate{display:flex;align-items:center;flex-wrap:wrap;gap:8px 12px;margin-top:12px}
+.rinput{position:relative;display:inline-block}
+.rinput .stars{--sz:30px}
+.hit{position:absolute;top:0;bottom:0;width:10%;padding:0;border:0;background:transparent;cursor:pointer}
+.hit:focus-visible{outline:2px solid var(--accent);outline-offset:0}
+.rval{font-family:var(--mono);font-weight:700;font-size:16px;min-width:3ch}
+.rval.un{font-family:var(--body);font-weight:400;font-size:14px;color:var(--muted)}
+.mini{font:inherit;font-size:12px;padding:4px 9px;border-radius:999px;border:1px solid var(--line);background:var(--bg);color:var(--ink);cursor:pointer}
+.tabs{grid-template-columns:repeat(5,1fr)}
+.notes textarea{width:100%;min-height:220px;font:inherit;line-height:1.5;padding:12px;border:1px solid var(--line);border-radius:8px;background:var(--bg);color:var(--ink);resize:vertical}
+.notes textarea:focus-visible{outline:2px solid var(--accent);outline-offset:1px}
+.nstat{font-size:13px;color:var(--muted);margin-top:6px;min-height:1.2em}
+.nstat.err{color:var(--rose)}
+.city .ft{font-family:var(--mono);font-size:11px;color:var(--sky)}
+.plan{display:grid;gap:10px}
+.pgrid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
+.pcell{display:flex;flex-direction:column;gap:4px;background:var(--bg);border:1px solid var(--line);border-radius:8px;padding:10px 12px;min-width:0}
+.plbl{font-family:var(--mono);font-size:12px;color:var(--muted);letter-spacing:.04em}
+.pval{font-family:var(--display);font-weight:700;font-size:26px;line-height:1.1;font-variant-numeric:tabular-nums}
+.pin{font-family:var(--display);font-weight:700;font-size:24px;width:100%;min-width:0;padding:4px 8px;border:1px solid var(--line);border-radius:6px;background:var(--surface);color:var(--ink);font-variant-numeric:tabular-nums}
+.pin:focus-visible,.plink:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.psub{color:var(--muted);font-size:13px;margin:0}
+.ph{font-family:var(--display);font-weight:600;font-size:19px;margin:8px 0 0}
+.plinks{display:grid;gap:6px}
+.plink{display:block;font-weight:700;font-size:14px;color:var(--sky);text-decoration:none;padding:9px 12px;border:1px solid var(--line);border-radius:8px;background:var(--surface)}
+.plink:hover{border-color:var(--sky)}
+/* view toggle + map */
+.viewtoggle{display:inline-flex;border:1px solid var(--line);border-radius:8px;overflow:hidden;background:var(--surface)}
+.vbtn{display:inline-flex;align-items:center;gap:6px;font:inherit;font-size:13px;font-weight:700;padding:7px 11px;border:0;background:transparent;color:var(--muted);cursor:pointer}
+.vbtn svg{width:16px;height:16px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+.vbtn[aria-pressed="true"]{background:var(--ink);color:var(--bg)}
+.mapwrap{position:relative;height:clamp(380px,66vh,720px);border:1px solid var(--line);border-radius:10px;overflow:hidden;background:var(--water);touch-action:none}
+#mapsvg{display:block;width:100%;height:100%;cursor:grab}
+#mapsvg:active{cursor:grabbing}
+.m-water{fill:var(--water)} .m-grat{fill:none;stroke:var(--grid);stroke-width:1;vector-effect:non-scaling-stroke}
+.m-land{fill:var(--land)}
+.m-coast{fill:none;stroke:var(--coast);stroke-width:.8;vector-effect:non-scaling-stroke}
+.m-border{fill:none;stroke:var(--border);stroke-width:1.1;vector-effect:non-scaling-stroke}
+.m-state{fill:none;stroke:var(--state);stroke-width:.8;stroke-dasharray:3 2;vector-effect:non-scaling-stroke}
+.m-route{fill:none;stroke:var(--accent);stroke-opacity:.22;stroke-width:1;vector-effect:non-scaling-stroke;pointer-events:none}
+.m-route.sel{stroke-opacity:.95;stroke-width:2.2}
+.m-route.dim{stroke-opacity:.05}
+.m-stlbl{font-family:var(--mono);font-size:9px;fill:var(--maplbl);opacity:.75;text-anchor:middle;pointer-events:none}
+.m-clbl{font-family:var(--display);font-weight:600;font-size:12px;letter-spacing:.14em;fill:var(--maplbl);text-anchor:middle;pointer-events:none}
+.m-olbl{font-family:var(--display);font-style:italic;font-size:14px;letter-spacing:.06em;fill:var(--olbl);text-anchor:middle;pointer-events:none}
+.m-olsub{font-size:11px}
+.off{display:none}
+.m-pt{cursor:pointer;outline:none}
+.m-hit{fill:transparent}
+.m-dot{fill:var(--surface);stroke:var(--ink);stroke-width:1.6}
+.m-pt.rated .m-dot{fill:var(--accent);stroke:var(--accent-ink)}
+.m-ring{fill:none;stroke:var(--accent);stroke-width:2.4;opacity:0}
+.m-pt.sel .m-ring,.m-pt:focus-visible .m-ring{opacity:1}
+.m-code{font-family:var(--mono);font-weight:700;font-size:11px;fill:var(--ink);paint-order:stroke;stroke:var(--land);stroke-width:3px;stroke-linejoin:round}
+.m-pt.nolbl .m-code{display:none}
+.m-pt:hover .m-code{display:inline}
+.m-pt.dim{opacity:.16;pointer-events:none}
+.m-hub rect{fill:var(--ink)} .m-hub text{font-family:var(--mono);font-weight:700;font-size:12px;fill:var(--ink);paint-order:stroke;stroke:var(--land);stroke-width:3px}
+.mapctl{position:absolute;top:10px;right:10px;display:flex;flex-direction:column;gap:6px}
+.mapctl button{width:34px;height:34px;font:inherit;font-size:18px;font-weight:700;line-height:1;border:1px solid var(--line);border-radius:8px;background:var(--surface);color:var(--ink);cursor:pointer}
+.mapctl button.rs{font-size:11px}
+.maplegend{position:absolute;left:10px;bottom:10px;display:flex;flex-wrap:wrap;gap:6px 12px;max-width:calc(100% - 20px);font-size:12px;color:var(--muted);background:var(--surface);border:1px solid var(--line);border-radius:8px;padding:6px 10px}
+.maplegend span{display:inline-flex;align-items:center;gap:5px}
+.lg-dot{width:10px;height:10px;border-radius:50%;border:1.6px solid var(--ink);background:var(--surface)}
+.lg-dot.r{background:var(--accent);border-color:var(--accent-ink)}
+.lg-hub{width:10px;height:10px;border-radius:2px;background:var(--ink)}
+.mapmsg{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;color:var(--muted);text-align:center;padding:20px}
+.maptip{position:absolute;pointer-events:none;background:var(--surface);color:var(--ink);border:1px solid var(--line);border-radius:6px;padding:6px 9px;font-size:13px;box-shadow:0 2px 8px rgba(0,0,0,.15);white-space:nowrap}
+.maptip b{font-family:var(--mono)} .tipst{display:flex;align-items:center;gap:4px;font-size:12px;color:var(--muted);margin-top:2px}
+.maphint{color:var(--muted);font-size:13px;margin:8px 0 0}
+
+
+.hub{position:relative}
+.syncbtn{margin-left:auto;align-self:center;font:inherit;font-size:13px;font-weight:700;padding:7px 12px;border-radius:999px;border:1px solid var(--line);background:var(--surface);color:var(--muted);cursor:pointer}
+.syncbtn[data-state="on"]{color:var(--leaf);border-color:var(--leaf)}
+.syncbtn[data-state="warn"]{color:var(--accent-ink);border-color:var(--accent)}
+.scrim2{position:fixed;inset:0;background:var(--shade);z-index:40}
+.syncsheet{position:fixed;left:50%;top:max(12vh,env(safe-area-inset-top,0px));transform:translateX(-50%);width:min(440px,calc(100% - 32px));z-index:41;background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:18px;display:grid;gap:10px}
+.syncsheet h3{font-family:var(--display);font-size:24px;margin:0}
+.srow{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+</style>
+
+<script src="config.js"></script>
+</head>
+<body>
+<div class="wrap">
+  <header class="hub">
+    <div class="hubcode" aria-hidden="true">AUS</div>
+    <div class="hubtext">
+      <h1>Every Southwest nonstop from Austin</h1>
+      <p><span id="total">72</span> destinations. Tap a city for things to do, places to eat and things to know.</p>
+    </div>
+    <button class="syncbtn" id="syncbtn" data-state="off">On this phone</button>
+  </header>
+
+  <div class="controls">
+    <input id="q" class="search" type="search" placeholder="Search a city or code (e.g. MSY)" aria-label="Search destinations">
+    <div class="filters" role="group" aria-label="Filter">
+      <button class="chipbtn" data-f="all" aria-pressed="true">All</button>
+      <button class="chipbtn" data-f="yr" aria-pressed="false">Year-round</button>
+      <button class="chipbtn" data-f="S" aria-pressed="false">Seasonal</button>
+      <button class="chipbtn" data-f="nopp" aria-pressed="false">No passport</button>
+      <button class="chipbtn" data-f="rated" aria-pressed="false">Been there</button>
+      <button class="chipbtn" data-f="unrated" aria-pressed="false">Not yet</button>
+    </div>
+    <div class="viewtoggle" role="group" aria-label="View">
+      <button class="vbtn" data-view="list" aria-pressed="true"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 6h11M9 12h11M9 18h11"/><circle cx="4.5" cy="6" r="1"/><circle cx="4.5" cy="12" r="1"/><circle cx="4.5" cy="18" r="1"/></svg>List</button>
+      <button class="vbtn" data-view="map" aria-pressed="false"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 4 3 6.5v13.5l6-2.5 6 2.5 6-2.5V4l-6 2.5z"/><path d="M9 4v13.5M15 6.5V20"/></svg>Map</button>
+    </div>
+    <button class="dice" id="dice">Pick one for us</button>
+  </div>
+  <div class="legend" id="legendList">
+    <span><i class="tag t-S">Seas</i> seasonal</span>
+    <span><i class="tag t-N">New</i> newer route</span>
+    <span><i class="tag t-P">Pass</i> passport</span>
+    <span><i class="tag t-F">2027</i> starts later</span>
+  </div>
+
+  <div class="layout">
+    <div style="min-width:0">
+    <main class="tree" id="tree"></main>
+    <div id="map" hidden>
+      <div class="mapwrap">
+        <svg id="mapsvg" role="group" aria-label="Map of Southwest nonstops from Austin"></svg>
+        <div class="mapctl"><button id="zin" aria-label="Zoom in">+</button><button id="zout" aria-label="Zoom out">−</button><button id="zreset" class="rs" aria-label="Reset map">Fit</button></div>
+        <div class="maplegend"><span><i class="lg-hub"></i>Austin</span><span><i class="lg-dot"></i>Not yet</span><span><i class="lg-dot r"></i>Been there</span></div>
+        <div class="mapmsg" id="mapmsg" hidden></div>
+        <div class="maptip" id="maptip" hidden></div>
+      </div>
+      <p class="maphint">Pinch or scroll to zoom, drag to pan. Airport codes appear as you zoom in. Tap an airport to open it. Search and filters dim the airports that don't match.</p>
+    </div>
+    </div>
+
+    <div class="scrim" id="scrim" hidden></div>
+    <aside class="panel" id="panel" aria-live="polite"></aside>
+  </div>
+
+  <p class="foot">Route list from Southwest (Oct 15, 2026). Flight counts refresh daily from published schedules and are kept on your phone for offline use. Ratings, notes and your counts save on this phone first and sync between your phones when you sign in. Restaurants open and close, so check hours before you go.</p>
+</div>
+
+<div class="scrim2" id="syncscrim" hidden></div><div class="syncsheet" id="syncsheet" hidden role="dialog" aria-label="Sync"></div>
+<script>
+const D=[];
+D.push(
+{c:"ABQ",n:"Albuquerque",s:"NM",r:"tx",t:[],
+d:["Sandia Peak Tramway|2.7-mile ride up to 10,378 ft — go at sunset","Old Town|Adobe plaza and San Felipe de Neri Church (1793)","Balloon Fiesta|Early October; mass ascensions at dawn","Petroglyph National Monument|Short trails past thousands of rock carvings","Indian Pueblo Cultural Center|History and art of New Mexico's 19 pueblos","ABQ BioPark|Zoo, aquarium and botanic garden on one ticket","Breaking Bad filming spots|Self-guided tour of the show's locations","Nob Hill on Route 66|Neon signs, shops and bars along Central Ave","Turquoise Trail|Scenic drive to the art town of Madrid","Rio Grande Nature Center|Cottonwood bosque trails; sandhill cranes in winter"],
+e:["Frontier Restaurant|Sweet rolls and green chile stew across from UNM","Sadie's of New Mexico|Huge plates, red and green chile","Mary & Tito's Café|Carne adovada institution","Church Street Café|Inside one of Old Town's oldest houses","El Pinto|Big patio and its own salsa line","Golden Pride|Local breakfast burrito favorite","Sawmill Market|Food hall in a converted lumber yard","Duran Central Pharmacy|Lunch counter inside a pharmacy","Range Café|Quirky New Mexican comfort food","Monroe's|Green chile cheeseburgers"],
+f:["The Balloon Fiesta is the world's largest hot-air balloon event","The city sits at about 5,300 ft elevation","Founded in 1706 as a Spanish colonial outpost","Named for the Duke of Alburquerque — the first 'r' was dropped later","Microsoft was founded here in 1975","Route 66 runs straight through on Central Avenue","Breaking Bad and Better Call Saul were filmed here","The state question is 'Red or green?' — answer 'Christmas' for both","'Sandía' means watermelon — the mountains glow pink at sunset","Kirtland AFB and Sandia National Labs are major employers"]},
+{c:"AMA",n:"Amarillo",s:"TX",r:"tx",t:[],
+d:["Cadillac Ranch|Bring spray paint and tag the buried Cadillacs","Palo Duro Canyon State Park|Second-largest canyon in the US","TEXAS outdoor musical|Summer nights in Palo Duro's amphitheater","Big Texan Steak Ranch|Watch someone attempt the 72-oz steak","Route 66 on 6th Ave|Antique shops, bars and old service stations","Panhandle-Plains Historical Museum|Largest history museum in Texas (Canyon)","American Quarter Horse Hall of Fame","Amarillo Botanical Gardens","Hodgetown|Sod Poodles minor-league baseball","Lake Meredith|Boating and cliffs north of town"],
+e:["The Big Texan Steak Ranch|Free 72-oz steak if you finish in an hour","Tyler's Barbeque|Brisket that draws a line","Golden Light Cafe|Route 66 burgers since 1946","Coyote Bluff Café|Tiny shack, huge burgers","Youngblood's Cafe|Chicken-fried steak","OHMS Cafe & Bar|Downtown lunch spot","Crush Wine Bar & Deli","Six Car Pub & Brewery","Blue Sky Texas|Burgers and shakes","Pak-a-Burger|Local burger chain since the 1950s"],
+f:["Once called the 'Helium Capital of the World'","Cadillac Ranch was built in 1974 by the art group Ant Farm","'Amarillo' means yellow in Spanish","The city sits on historic Route 66","Palo Duro Canyon runs about 120 miles","It's one of the windiest cities in the US","The Pantex nuclear weapons plant is just outside town","Cattle feedlots here supply a large share of US beef","Amarillo sits at about 3,600 ft — expect cooler nights than Austin","The Big Texan steak challenge began in 1960"]},
+{c:"DAL",n:"Dallas",s:"TX",r:"tx",t:[],
+d:["Sixth Floor Museum|JFK history at Dealey Plaza","Dallas Arts District|DMA (free) and Nasher Sculpture Center","Klyde Warren Park|A park built over a freeway","Bishop Arts District|Indie shops and restaurants","Deep Ellum|Live music and murals","Reunion Tower GeO-Deck|360° skyline view","Dallas Arboretum|Lakeside gardens","AT&T Stadium tour|Cowboys stadium in Arlington","Perot Museum of Nature and Science","Fort Worth Stockyards|Twice-daily cattle drive, 40 min west"],
+e:["Pecan Lodge|Brisket and beef ribs in Deep Ellum","Cattleack Barbeque|Limited days — go early","Mia's Tex-Mex|Brisket tacos","Javier's|Upscale Mexico City cooking","Knife|Steakhouse with dry-aged cuts","Lucia|Italian in Bishop Arts","Maple & Motor|Burger joint","Velvet Taco|Creative tacos, open late","Uchi Dallas|Austin-born Japanese","Monarch|Italian on the 49th floor"],
+f:["Love Field is Southwest Airlines' home base and HQ","The frozen margarita machine was invented here in 1971","Texas Instruments built the first integrated circuit here in 1958","Big Tex greets visitors at the State Fair of Texas","The Arts District is the largest contiguous urban arts district in the US","The DFW metro has about 8 million people","The Wright Amendment restricted Love Field flights until 2014","JFK was assassinated in Dealey Plaza in 1963","7-Eleven started in Dallas in 1927","The Cowboys play in Arlington, not Dallas"]},
+{c:"ELP",n:"El Paso",s:"TX",r:"tx",t:[],
+d:["Franklin Mountains State Park|Largest urban park in the US","Scenic Drive Overlook|City and Juárez lights at night","Hueco Tanks|Bouldering and pictographs — reserve ahead","Mission Trail|Ysleta, Socorro and San Elizario missions","El Paso Museum of Art|Free","Chamizal National Memorial","Southwest University Park|Chihuahuas baseball downtown","Magoffin Home|1875 adobe historic site","El Paso Holocaust Museum","White Sands National Park|1.5 hours north — sled the dunes"],
+e:["L&J Café|Since 1927, by Concordia Cemetery","Chico's Tacos|Rolled tacos in tomato broth","Kiki's Restaurant|Classic El Paso Mexican","H&H Car Wash & Coffee Shop|Breakfast at a car wash","Rosa's Cantina|The one from the Marty Robbins song","Cattleman's Steakhouse|Ranch dining 30 min out","Carnitas Queretaro","Crave Kitchen & Bar","Salt + Honey Bakery","Los Bandidos de Carlos & Mickey's"],
+f:["It sits across the Rio Grande from Ciudad Juárez","El Paso is on Mountain Time, unlike most of Texas","It's closer to San Diego than to Houston","Fort Bliss is one of the Army's largest installations","A Spanish expedition held a thanksgiving here in 1598","Ysleta Mission (1682) is among the oldest in Texas","Franklin Mountains State Park covers about 26,000 acres","The Star on the Mountain is lit every night","The Tigua people's Ysleta del Sur Pueblo is here","El Paso routinely ranks among the safest large US cities"]},
+{c:"HRL",n:"Harlingen / South Padre",s:"TX",r:"tx",t:[],
+d:["South Padre Island beaches|30 minutes east","Sea Turtle Inc.|Rescue center on South Padre","Laguna Atascosa NWR|Ocelot habitat and birding","Iwo Jima Memorial|Original model for the Arlington statue","Hugh Ramsey Nature Park|Birding trails","Port Isabel Lighthouse|Climb it for bay views","Gladys Porter Zoo|In nearby Brownsville","SpaceX Starbase|View the launch site at Boca Chica","Dolphin watch on the Laguna Madre","Harlingen Arts & Heritage Museum"],
+e:["Pier 19|Seafood over the bay (SPI)","Louie's Backyard|Sunset seafood buffet (SPI)","Dirty Al's|Fried shrimp institution","Sea Ranch Restaurant|Fresh Gulf fish","Gabriella's Italian Grill","Blackbeard's|Casual island classic","Pirate's Landing|Port Isabel waterfront","Yummies Bistro|Breakfast on SPI","Lobo Del Mar Café","Grapevine Café|Coffee and breakfast"],
+f:["Harlingen is the gateway to South Padre Island","The Rio Grande Valley is one of the top birding regions in the US","The Iwo Jima Memorial here is the working model for the one at Arlington","South Padre is on the world's longest barrier island","The Ruby Red grapefruit is the Texas state fruit — grown here","SpaceX's Starbase is about an hour away","Harlingen grew up around the railroad in the early 1900s","The Laguna Madre is a rare hypersaline lagoon","Thousands of 'Winter Texans' arrive each winter","Kemp's ridley sea turtles nest on Padre Island"]},
+{c:"HOU",n:"Houston (Hobby)",s:"TX",r:"tx",t:[],
+d:["Space Center Houston|NASA tram tours and Saturn V","Museum District|MFAH and Natural Science museum","Menil Collection & Rothko Chapel|Both free","Buffalo Bayou Park|Trails, bat colony at dusk","Hermann Park & Houston Zoo","Discovery Green|Downtown park","The Cistern|Underground former reservoir","Galveston day trip|Strand district and beach","Astros game at Daikin Park","Market Square Park & graffiti alleys"],
+e:["Killen's Barbecue|Brisket in Pearland","Truth BBQ","Original Ninfa's on Navigation|Where fajitas got famous","Hugo's|Regional Mexican","Xochi|Oaxacan","Pappas Bros. Steakhouse","Crawfish & Noodles|Viet-Cajun crawfish","The Breakfast Klub|Chicken and waffles","Himalaya Restaurant|Pakistani-Indian","Mala Sichuan Bistro"],
+f:["'Houston' was the first word spoken from the Moon","It's the fourth-largest US city","Houston has no formal zoning code","The Texas Medical Center is the world's largest medical complex","The Port of Houston is one of the busiest in the US","Hobby Airport is named for Gov. William P. Hobby","More than 145 languages are spoken here","The Astrodome (1965) was the first domed stadium","The Houston Livestock Show and Rodeo is the world's largest","Ninfa's helped popularize fajitas in the 1970s"]},
+{c:"LBB",n:"Lubbock",s:"TX",r:"tx",t:[],
+d:["Buddy Holly Center","Texas Tech campus & a Red Raiders game","National Ranching Heritage Center|50+ historic ranch buildings","American Windmill Museum","Lubbock Lake Landmark|12,000 years of human history","Cactus Theater|Live music on Buddy Holly Ave","Depot District|Bars and venues","Llano Estacado Winery","Prairie Dog Town|Mackenzie Park","Silent Wings Museum|WWII glider history"],
+e:["Cast Iron Grill|Pies and breakfast","The West Table","Evie Mae's Pit Barbeque|In Wolfforth","Tom & Bingo's Bar-B-Q","La Diosa Cellars","Cagle Steaks","Triple J's Chophouse & Brew","Josie's Mexican Food","Chimy's|Tex-Mex and margaritas","Gardski's Loft"],
+f:["Buddy Holly was born here in 1936","Texas Tech has about 40,000 students","The area is the largest contiguous cotton-growing region in the world","Nicknamed the 'Hub City'","The 'Lubbock Lights' UFO sighting happened in 1951","Waylon Jennings grew up in nearby Littlefield","The city sits on the Llano Estacado, one of North America's largest mesas","Lubbock allowed package liquor sales only in 2009","Mac Davis was also from Lubbock","The Windmill Museum has 170+ windmills"]},
+{c:"MAF",n:"Midland / Odessa",s:"TX",r:"tx",t:[],
+d:["Permian Basin Petroleum Museum","George W. Bush Childhood Home","Monahans Sandhills State Park|Rent a sand disk and slide the dunes","Odessa Meteor Crater","Stonehenge replica at UTPB","Ratliff Stadium|Home of the Permian Panthers","Midland RockHounds game","Sibley Nature Center","Ellen Noël Art Museum","McDonald Observatory road trip|Star parties, ~3 hrs"],
+e:["Wall Street Bar & Grill","Cork & Pig Tavern","Venezia Italian Grill","Murray's Deli","Gerardo's Casita","Rockin' Q Smokehouse","The Garlic Press","Luigi's Italian Restaurant","Taco Villa|West Texas fast-food classic","Bar Louie"],
+f:["Both cities sit atop the Permian Basin, the top US oil field","Friday Night Lights is about Odessa's Permian Panthers","George H.W. and George W. Bush both lived in Midland","Laura Bush grew up in Midland","The Odessa meteor crater is about 63,500 years old","Odessa's symbol is the jackrabbit — look for the statues","Midland is nicknamed 'The Tall City'","Midland got its name for being midway between Fort Worth and El Paso","Monahans dunes reach about 70 feet","Odessa has a Stonehenge replica"]},
+{c:"OKC",n:"Oklahoma City",s:"OK",r:"tx",t:[],
+d:["Oklahoma City National Memorial & Museum","Bricktown & canal water taxi","Scissortail Park","National Cowboy & Western Heritage Museum","Myriad Botanical Gardens","First Americans Museum","Thunder game at Paycom Center","Stockyards City|Western wear and cattle auctions","Riversport OKC|Whitewater rafting downtown","Plaza & Paseo Arts Districts"],
+e:["Cattlemen's Steakhouse|Since 1910 in Stockyards City","Nic's Grill|Tiny diner, giant burgers","Pho Lien Hoa|Asian District","Vast|Top of Devon Tower","Ludivine","Big Truck Tacos","Tucker's Onion Burgers","Kitchen No. 324","Empire Slice House","Florence's Restaurant|Soul food since 1952"],
+f:["The state capitol has active oil wells on its grounds","About 10,000 people settled the city in one day in the 1889 Land Run","The shopping cart was invented here in 1937","The first parking meter was installed here in 1935","The 1995 bombing memorial has 168 empty chairs","The Thunder moved from Seattle in 2008","OKC covers about 620 square miles","Bricktown has a mile-long canal","The Asian District has a large Vietnamese community","Route 66 runs through the city"]},
+{c:"TUL",n:"Tulsa",s:"OK",r:"tx",t:[],
+d:["Gathering Place|66-acre riverside park","Philbrook Museum of Art|Villa and gardens","Greenwood Rising|Tulsa Race Massacre history","Bob Dylan Center","Woody Guthrie Center","Cain's Ballroom|Historic music venue","Center of the Universe|Odd acoustic spot downtown","Golden Driller|75-ft statue","Route 66 sights|Buck Atom and the Meadow Gold sign","Blue Dome District"],
+e:["Burn Co Barbeque","Mother Road Market|Food hall on Route 66","Andolini's Pizzeria","Ike's Chili|Since 1908","Hank's Hamburgers","Hideaway Pizza","Wanda J's|Soul food in Greenwood","Elote Café","Laffa Medi-Eastern","Prairie Fire Pie"],
+f:["Tulsa was once the 'Oil Capital of the World'","Greenwood was known as 'Black Wall Street'","The 1921 Race Massacre destroyed Greenwood","Cyrus Avery, 'Father of Route 66,' was from Tulsa","Cain's Ballroom is called the 'Carnegie Hall of Western Swing'","Gathering Place opened in 2018","Tulsa Remote paid remote workers to move here","Downtown has a big collection of Art Deco buildings","Much of Tulsa sits within the Muscogee reservation (2020 ruling)","The Golden Driller is the state monument"]},
+{c:"PHX",n:"Phoenix",s:"AZ",r:"tx",t:[],
+d:["Desert Botanical Garden","Camelback Mountain hike|Start early","Heard Museum|Native American art","Musical Instrument Museum","Taliesin West|Frank Lloyd Wright's winter home","Old Town Scottsdale","South Mountain Park","Sedona day trip|Red rocks, ~2 hrs","Spring training (Feb–Mar)","Hole-in-the-Rock at Papago Park"],
+e:["Pizzeria Bianco","Little Miss BBQ","Tacos Chiwas","Matt's Big Breakfast","Durant's|Old-school steakhouse","Bacanora|Sonoran grill","Lom Wong|Thai","Fry Bread House","Cocina Madrigal","The Original Hamburger Works"],
+f:["Most of Arizona skips daylight saving time","Phoenix is the fifth-largest US city","It averages 100+ days over 100°F a year","Modern canals follow ancient Hohokam routes","The '5 Cs': copper, cattle, cotton, citrus, climate","Sky Harbor calls itself 'America's Friendliest Airport'","About 15 MLB teams hold spring training in the Valley","The saguaro blossom is the state flower","The name refers to a city rising from Hohokam ruins","The Arizona Biltmore drew on Frank Lloyd Wright's designs"]},
+{c:"LAS",n:"Las Vegas",s:"NV",r:"tx",t:[],
+d:["The Strip at night|Bellagio fountains","Sphere|A show inside, or see it lit up","Fremont Street Experience","Red Rock Canyon","Hoover Dam","Valley of Fire State Park","Neon Museum","High Roller observation wheel","A Cirque du Soleil show","Seven Magic Mountains"],
+e:["Lotus of Siam|Northern Thai","Esther's Kitchen|Arts District Italian","Raku|Japanese robata","Peppermill|24/7 diner and fireside lounge","Golden Steer|Old Vegas steakhouse","Bacchanal Buffet|Caesars","Mon Ami Gabi|Patio facing the fountains","Tacos El Gordo","Carson Kitchen","Ferraro's"],
+f:["Most of the Strip is in the town of Paradise, not Las Vegas","The city was founded in 1905","Hoover Dam was built from 1931 to 1936","Vegas has about 150,000 hotel rooms","Sphere is the largest spherical building in the world","'Las Vegas' means 'the meadows'","The Mob Museum is in the old federal courthouse","Nevada has no state income tax","The airport is Harry Reid International (formerly McCarran)","Vegas hosts F1 on the Strip each November"]}
+);
+
+D.push(
+{c:"BUR",n:"Burbank / Hollywood",s:"CA",r:"west",t:[],
+d:["Warner Bros. Studio Tour","Griffith Observatory|Free, best at sunset","Universal Studios Hollywood","Hollywood Walk of Fame & TCL Chinese Theatre","Getty Center|Free art and gardens","Hollywood Bowl concert","Old Town Pasadena & the Huntington","Descanso Gardens","Magnolia Park vintage shops","Runyon Canyon hike"],
+e:["Porto's Bakery|Cuban pastries, worth the line","Bob's Big Boy Burbank|Oldest remaining Big Boy (1949)","Tony's Darts Away|Local beer, vegan sausages","Granville","Pinocchio in Burbank|Cafeteria-style Italian","Langer's Deli|Pastrami #19","Philippe the Original|French dip","Musso & Frank Grill|Hollywood's oldest restaurant","Din Tai Fung (Glendale)","Damon's Steak House (Glendale)|Tiki-era classic"],
+f:["Burbank calls itself the 'Media Capital of the World'","Disney and Warner Bros. are headquartered here","Hollywood Burbank Airport is far closer to Hollywood than LAX","Lockheed's Skunk Works began in Burbank","The Tonight Show taped in Burbank for decades","The Hollywood sign read 'Hollywoodland' until 1949","Griffith Park covers about 4,300 acres","BUR opened in 1930 as Union Air Terminal","Disney's Burbank HQ has columns shaped like the Seven Dwarfs","Nickelodeon's animation studio is in Burbank"]},
+{c:"LGB",n:"Long Beach",s:"CA",r:"west",t:[],
+d:["Queen Mary","Aquarium of the Pacific","Shoreline Village","Naples Island gondola ride","Belmont Shore's 2nd Street","Catalina Island ferry","Museum of Latin American Art","Rancho Los Alamitos","El Dorado Nature Center","Long Beach Grand Prix (April)"],
+e:["Ellie's|Seasonal Italian","Panxa Cocina|New Mexican","Phnom Penh Noodle Shack|Cambodia Town","Hof's Hut|Local diner chain","Restauration","Lola's Mexican Cuisine","The Attic","Federal Bar","Café Gazelle","Rose Park Roasters|Coffee"],
+f:["Long Beach has the largest Cambodian community outside Cambodia","The Ports of Long Beach and LA form the busiest US container complex","The Queen Mary has been docked here since 1967","LGB's terminal is a 1941 Streamline Moderne landmark","The Grand Prix has run since 1975","Snoop Dogg is from Long Beach","The Spruce Goose was displayed next to the Queen Mary until 1992","Offshore oil islands are disguised to look like resort towers","Naples is built around canals","Catalina is about an hour away by ferry"]},
+{c:"LAX",n:"Los Angeles",s:"CA",r:"west",t:[],
+d:["Santa Monica Pier","Venice Beach & Canals","Getty Center","Griffith Observatory","LACMA & Urban Light","The Broad|Free, reserve ahead","Hollywood Walk of Fame","Disneyland|~1 hr south","El Matador Beach, Malibu","Dodger Stadium game"],
+e:["Grand Central Market","Langer's Deli","Philippe the Original","In-N-Out on Sepulveda|Watch jets land overhead","Guisados|Braised tacos","Bestia|Arts District Italian","Howlin' Ray's|Nashville hot chicken","Kogi BBQ truck","Pink's Hot Dogs","Sqirl|Breakfast"],
+f:["LA County has about 10 million people","The In-N-Out by LAX is a famous plane-spotting spot","The original name was 'El Pueblo de Nuestra Señora la Reina de los Ángeles'","The X in LAX is filler — airport codes went from 2 to 3 letters","LAX's Theme Building opened in 1961","Griffith Observatory is free","LA hosted the Olympics in 1932 and 1984, and will in 2028","Venice's canals were built in 1905","LA has more museums than any other US city","The Getty Center's travertine came from Italy"]},
+{c:"ONT",n:"Ontario / Inland Empire",s:"CA",r:"west",t:[],
+d:["Mission Inn|Historic hotel in Riverside","Mount Baldy|Hike or ride the lift","Temecula wine country","Big Bear Lake","Lake Arrowhead","Graber Olive House|Since 1894","Claremont Village","Ontario Mills","Joshua Tree NP|~1.5 hrs","Disneyland|~45 min"],
+e:["Mitla Café|San Bernardino, since 1937","Back Abbey|Claremont gastropub","Walter's Restaurant|Claremont","Mission Inn Restaurant","Café Sevilla Riverside","Baker's Drive-Thru|Started here in 1952","Mt. Baldy Lodge","Viva Madrid|Claremont tapas","Augie's Coffee","Packing House District|Claremont eats"],
+f:["Ontario was named after Ontario, Canada, by the Chaffey brothers","Euclid Avenue has a famous tree-lined median","The Inland Empire has about 4.7 million people","ONT was run by LA's airport agency until 2016","Graber has cured olives here since 1894","The first McDonald's opened in San Bernardino in 1940","The Mission Inn has hosted several presidents","Route 66 passes through Rancho Cucamonga","Cucamonga is one of California's oldest wine regions","Mitla Café inspired Taco Bell's founder"]},
+{c:"SNA",n:"Orange County",s:"CA",r:"west",t:["N"],
+d:["Laguna Beach coves & tide pools","Balboa Island & Fun Zone","Crystal Cove State Park","Disneyland|20 minutes","Huntington Beach pier","Mission San Juan Capistrano","South Coast Plaza","Dana Point whale watching","Little Saigon (Westminster)","Segerstrom Center for the Arts"],
+e:["The Crab Cooker|Newport classic","Beachcomber at Crystal Cove","Brodard|Little Saigon spring rolls","Nep Café","Las Brisas|Laguna views","Bear Flag Fish Co.","Sessions West Coast Deli","Taco Mesa","The Ranch|Anaheim steakhouse","Ruby's Shake Shack|Crystal Cove"],
+f:["SNA is John Wayne Airport — there's a 9-ft statue of him","Noise rules force steep, power-reduced departures","Orange County has about 3.2 million people","Disneyland opened in 1955","Huntington Beach is 'Surf City USA'","The swallows return to Capistrano each March","Little Saigon is the largest Vietnamese community outside Vietnam","Laguna Beach has been an art colony since the early 1900s","Newport has one of the largest small-boat harbors in the US","The Nixon Library is in Yorba Linda"]},
+{c:"SAN",n:"San Diego",s:"CA",r:"west",t:[],
+d:["Balboa Park","San Diego Zoo","La Jolla Cove|Sea lions","USS Midway Museum","Old Town","Coronado & Hotel del Coronado","Torrey Pines hike","Sunset Cliffs","Little Italy","Padres game at Petco Park"],
+e:["Las Cuatro Milpas|Barrio Logan","Oscar's Mexican Seafood","Hodad's|Ocean Beach burgers","Lucha Libre Taco Shop","Puesto","Liberty Public Market","Cesarina","Phil's BBQ","Born & Raised|Steakhouse","Mitch's Seafood|Point Loma"],
+f:["SAN is the busiest single-runway airport in the US","Final approach passes right over downtown","It's home to much of the Navy's Pacific Fleet","Balboa Park covers about 1,200 acres","Comic-Con has run here since 1970","California's first mission was founded here in 1769","The fish taco is a local staple","Hotel del Coronado opened in 1888","The border crossing at San Ysidro is the busiest in the hemisphere","Average temperatures hover around 70°F"]},
+{c:"OAK",n:"Oakland",s:"CA",r:"west",t:[],
+d:["Lake Merritt","Jack London Square","Oakland Museum of California","Chabot Space & Science Center","Redwood Regional Park","Fox Theater show","Temescal & Rockridge","Berkeley|UC campus and Telegraph Ave","Ferry to San Francisco","Oakland Zoo gondola"],
+e:["Chez Panisse (Berkeley)","Commis|Michelin-starred","Zachary's Chicago Pizza","Fentons Creamery","Kingston 11|Jamaican","Cholita Linda","Burma Superstar","Lois the Pie Queen","Shan Dong","Le Cheval|Vietnamese"],
+f:["The Port of Oakland is one of the busiest in the US","The Black Panther Party was founded here in 1966","Jack London grew up in Oakland","Lake Merritt was the first official wildlife refuge in the US (1870)","Gertrude Stein wrote 'there is no there there' about Oakland","Trader Vic claimed the mai tai was invented here in 1944","Oakland is one of the most diverse cities in the US","The Fox Theater opened in 1928","The A's left Oakland after 2024","OAK is usually easier than SFO for a standby run into the city"]},
+{c:"SFO",n:"San Francisco",s:"CA",r:"west",t:[],
+d:["Walk the Golden Gate Bridge","Alcatraz|Book weeks ahead","Ferry Building","Golden Gate Park","Cable car ride","Chinatown","Mission murals & Dolores Park","Lands End trail","Muir Woods|Reserve parking","Exploratorium"],
+e:["Swan Oyster Depot","Tartine Bakery","La Taqueria|Mission burrito","House of Prime Rib","Hog Island Oyster Co.","Zuni Café|Roast chicken","Golden Boy Pizza","Good Mong Kok|Dim sum to go","Brenda's French Soul Food","Burma Superstar"],
+f:["The cable cars are a moving National Historic Landmark","The fortune cookie was popularized here","The Golden Gate is painted 'International Orange'","The Mission burrito was born here","The 1906 earthquake and fire destroyed much of the city","Levi's jeans date to the Gold Rush","Alcatraz closed as a prison in 1963","The city is roughly 7 by 7 miles","San Francisco sourdough has its own bacteria strain","Lombard Street has eight hairpin turns"]},
+{c:"SJC",n:"San Jose",s:"CA",r:"west",t:[],
+d:["Winchester Mystery House","Santana Row","The Tech Interactive","Computer History Museum","Lick Observatory","Santa Cruz Beach Boardwalk|45 min","Apple Park Visitor Center","49ers game at Levi's Stadium","Alum Rock Park","Japantown"],
+e:["Original Joe's","Falafel's Drive-In","Adega|Michelin-starred Portuguese","Henry's Hi-Life|Old-school BBQ","Pho Y #1","Back A Yard|Caribbean","Orchard City Kitchen","Smoking Pig BBQ","Petiscos","Zeni Ethiopian"],
+f:["San Jose was California's first state capital (1850)","It's the largest city in Silicon Valley","The Winchester house has about 160 rooms","Its Japantown is one of three left in the US","Apple, Google and Nvidia are nearby","Lick Observatory was the first permanent mountaintop observatory","The airport is named for Norman Y. Mineta","San Jose is the Bay Area's largest city","Intel was founded nearby in 1968","The Tech Interactive is a Silicon Valley science museum"]},
+{c:"SMF",n:"Sacramento",s:"CA",r:"west",t:[],
+d:["Old Sacramento Waterfront","California State Railroad Museum","State Capitol & Capitol Park","Sutter's Fort","Crocker Art Museum","Tower Bridge","Lake Tahoe|~2 hrs","Coloma|Gold discovery site","American River Parkway bike ride","Kings game at Golden 1 Center"],
+e:["The Kitchen|Interactive tasting menu","Ella Dining Room","Localis","Frank Fat's|Since 1939","Tower Café","Zócalo","Fixins Soul Kitchen","Sam's Hof Brau","Shoki Ramen House","Midtown Farmers Market"],
+f:["Sacramento calls itself 'America's Farm-to-Fork Capital'","It was the western end of the Pony Express","The Gold Rush started nearby in 1848","It has been the state capital since 1854","Tower Bridge is painted gold","It's known as the City of Trees","The Central Pacific railroad started building east from here","The city sits where the Sacramento and American rivers meet","Downtown streets were raised after floods — there's an underground tour","The A's are playing at Sutter Health Park through 2027"]},
+{c:"SEA",n:"Seattle",s:"WA",r:"west",t:[],
+d:["Pike Place Market","Space Needle","Chihuly Garden and Glass","Museum of Pop Culture","Ferry to Bainbridge Island","Kerry Park view","Discovery Park","Museum of Flight|Concorde and Air Force One","Mount Rainier day trip","Fremont Troll"],
+e:["Pike Place Chowder","Paseo|Caribbean sandwiches","Canlis","The Walrus and the Carpenter","Taylor Shellfish","Ivar's Acres of Clams","Dick's Drive-In","Salumi","Piroshky Piroshky","Kedai Makan|Malaysian"],
+f:["Boeing was founded here in 1916","The first Starbucks opened at Pike Place in 1971","The Space Needle was built for the 1962 World's Fair","Seattle gets less yearly rain than New York City","Grunge came from Seattle","The Underground Tour shows the buried old city","Amazon and Microsoft are headquartered in the area","Washington runs the largest ferry system in the US","The city is named for Chief Si'ahl","The Museum of Flight is one of the largest air museums in the world"]},
+{c:"PDX",n:"Portland",s:"OR",r:"west",t:["N"],
+d:["Powell's City of Books","Japanese Garden & Rose Garden","Multnomah Falls|Columbia River Gorge","Forest Park","Pittock Mansion","Mount Hood","Food cart pods","Portland Saturday Market","Lan Su Chinese Garden","Cannon Beach|~1.5 hrs"],
+e:["Screen Door|Fried chicken brunch","Le Pigeon","Nong's Khao Man Gai","Lardo|Sandwiches","Pine State Biscuits","Apizza Scholls","Salt & Straw","Kachka|Russian","Voodoo Doughnut","Ox|Argentine grill"],
+f:["Portland's name was chosen by a coin toss in 1845","The PDX airport carpet has a cult following","Oregon has no sales tax","Mill Ends Park is the world's smallest park","Portland has more breweries than almost any US city","It's called the City of Roses","Forest Park is one of the largest urban forests in the US","Oregon allowed self-serve gas only in 2023","Powell's fills an entire city block","Nike is headquartered in nearby Beaverton"]},
+{c:"PSP",n:"Palm Springs",s:"CA",r:"west",t:["S"],
+d:["Palm Springs Aerial Tramway","Joshua Tree National Park","Indian Canyons","Mid-century modern architecture tour","Palm Springs Air Museum","Moorten Botanical Garden","VillageFest|Thursday night street fair","El Paseo, Palm Desert","Cabot's Pueblo Museum","Coachella Valley Preserve"],
+e:["Cheeky's|Bacon flight brunch","Workshop Kitchen + Bar","Sherman's Deli & Bakery","Tyler's Burgers","Pinocchio in the Desert","Melvyn's|Rat Pack-era","Lulu California Bistro","Shields Date Garden|Date shakes","Rio Azul","Johannes"],
+f:["The Agua Caliente Band of Cahuilla Indians owns much of the land","The tram has rotating cars, among the largest in the world","The valley gets about 350 sunny days a year","Studios once required stars to stay within two hours of Hollywood","It has one of the largest collections of mid-century modern homes","Frank Sinatra's Twin Palms house is here","PSP's terminal is mostly open-air","The Coachella Valley grows most US dates","Modernism Week happens each February","Elvis honeymooned here in 1967"]},
+{c:"RNO",n:"Reno / Tahoe",s:"NV",r:"west",t:["S"],
+d:["Lake Tahoe","Virginia City|Old mining town","Riverwalk District","National Automobile Museum","Pyramid Lake","Emerald Bay State Park","Ski Mt. Rose or Palisades Tahoe","The Reno Arch","Midtown District","Animal Ark wildlife sanctuary"],
+e:["Louis' Basque Corner|Family-style Basque","Gold 'N Silver Inn|24/7 diner","Peg's Glorified Ham n Eggs","Old Granite Street Eatery","Campo","Liberty Food & Wine Exchange","Great Basin Brewing Co.","Süp","Two Chicks","Sunnyside (Tahoe City)"],
+f:["Reno is 'The Biggest Little City in the World'","The Reno Air Races ran from 1964 to 2023","Lake Tahoe is the second-deepest lake in the US","Tahoe straddles California and Nevada","Reno was the divorce capital of the 1930s","Tesla's Gigafactory is just east of town","Burning Man is about two hours north","The Comstock Lode silver strike was in 1859","The Truckee River runs through downtown","Reno is farther west than Los Angeles"]},
+{c:"STS",n:"Santa Rosa / Sonoma",s:"CA",r:"west",t:["S"],
+d:["Healdsburg wine tasting","Charles M. Schulz Museum","Armstrong Redwoods","Bodega Bay","Canoe the Russian River","Jack London State Historic Park","Safari West","Luther Burbank Home & Gardens","Napa Valley|~45 min","Sonoma Coast — Goat Rock"],
+e:["Russian River Brewing|Pliny the Elder","The Spinster Sisters","SingleThread (Healdsburg)","Willi's Wine Bar","Hana Japanese","The Girl & the Fig (Sonoma)","Valette (Healdsburg)","Barndiva","Spud Point Crab Co.|Bodega Bay chowder","Mac's Delicatessen"],
+f:["STS is Charles M. Schulz–Sonoma County Airport — Snoopy is on the logo","Schulz lived and worked in Santa Rosa","Luther Burbank developed 800+ plant varieties here","Sonoma County has hundreds of wineries","Pliny the Younger's release draws lines every February","Hitchcock filmed The Birds in Bodega Bay","The Tubbs Fire burned part of the city in 2017","The Russian River is named for Russian traders at Fort Ross","Snoopy's Home Ice is a real rink","Sonoma County has 19 wine appellations"]}
+);
+
+D.push(
+{c:"DEN",n:"Denver",s:"CO",r:"mtn",t:[],
+d:["Red Rocks Amphitheatre|Concert or a morning hike","Rocky Mountain National Park|~1.5 hrs","Union Station & LoDo","Denver Art Museum","RiNo murals","Denver Botanic Gardens","Rockies game at Coors Field","Mount Blue Sky scenic drive","Golden|Clear Creek and the Coors tour","Denver Museum of Nature & Science"],
+e:["Sam's No. 3|Diner since 1927","Buckhorn Exchange|Denver's oldest restaurant","Tocabe|Native American","Rioja","Linger|In a former mortuary","Work & Class","Denver Central Market","El Taco de Mexico","Hop Alley","Snooze|Breakfast"],
+f:["The 13th step of the Capitol is exactly one mile high","DEN is the largest US airport by land area","DEN's tent roof was designed to echo the Rockies","The US Mint here stamps coins with a 'D'","Denver hosts the Great American Beer Festival","A Denver diner trademarked the 'cheeseburger' in 1935","Denver averages about 300 days of sun","Baseballs fly farther at Coors Field","Red Rocks sits between two 300-ft sandstone monoliths","The Broncos play at Empower Field at Mile High"]},
+{c:"SLC",n:"Salt Lake City",s:"UT",r:"mtn",t:[],
+d:["Temple Square","Antelope Island|Bison on the Great Salt Lake","Natural History Museum of Utah","Ski Alta, Snowbird or Brighton|30–40 min","Park City","Utah State Capitol","Red Butte Garden","Hogle Zoo","Bonneville Salt Flats","Ensign Peak hike"],
+e:["Red Iguana|Mole","Takashi|Sushi","Ruth's Diner|Canyon setting since 1930","Lamb's Grill|Since 1919","Hires Big H|Fry sauce","Oquirrh","The Copper Onion","Feldman's Deli","Laziz Kitchen","Pago"],
+f:["SLC was founded in 1847 by Mormon pioneers","The Great Salt Lake is much saltier than the ocean","Street addresses count from Temple Square","SLC hosted the 2002 Winter Olympics and will again in 2034","Fry sauce is a Utah staple","Jell-O is Utah's official state snack","Utah claims 'The Greatest Snow on Earth'","SLC's new airport opened in 2020","Land-speed records are set at Bonneville","Seven ski resorts are within an hour of the airport"]},
+{c:"BZN",n:"Bozeman / Yellowstone",s:"MT",r:"mtn",t:["N"],
+d:["Yellowstone National Park|~1.5 hrs to the West or North entrance","Museum of the Rockies|Dinosaurs","Big Sky Resort","Bridger Bowl","Main Street Bozeman","Hyalite Canyon","Chico Hot Springs","Hike the 'M' trail","Bozeman Hot Springs","Lewis & Clark Caverns"],
+e:["Montana Ale Works","Feed Café","Plonk","Bar 3 BBQ","Roost Fried Chicken","Sweet Pea Café","Wild Crumb|Bakery","Western Café|Pies since 1947","Blackbird Kitchen","Copper Whiskey Bar & Grill"],
+f:["Museum of the Rockies has one of the largest dinosaur collections in the US","Bozeman is one of the fastest-growing small cities in the US","Montana State University is here","Yellowstone became the first national park in 1872","The city is named for trail-blazer John Bozeman","Lewis and Clark passed through in 1806","Big Sky's Lone Peak tops 11,000 ft","The Gallatin River was featured in A River Runs Through It","Paleontologist Jack Horner worked here","BZN is Montana's busiest airport"]},
+{c:"HDN",n:"Steamboat Springs",s:"CO",r:"mtn",t:["S"],
+d:["Ski Steamboat Resort","Strawberry Park Hot Springs","Old Town Hot Springs","Fish Creek Falls","Tube the Yampa River","Howelsen Hill","Rabbit Ears Pass","Gondola & summer bike park","Yampa River Botanic Park","Tread of Pioneers Museum"],
+e:["Laundry Kitchen & Cocktails","Low Country Kitchen","Aurum","Creekside Café","Back Door Grill","Winona's","Rex's American Grill","Carl's Tavern","Mahogany Ridge","Truffle Pig"],
+f:["Hayden airport is about 25 miles from Steamboat","The town is named for a spring that sounded like a steamboat","Steamboat trademarked the phrase 'Champagne Powder'","It calls itself 'Ski Town, USA'","Howelsen Hill (1915) is Colorado's oldest operating ski area","Steamboat has produced 100+ Winter Olympians","Ranching is still part of daily life here","Strawberry Park pools are naturally 104°F","The Yampa is one of the West's last mostly free-flowing rivers","Winter routes here are often seasonal — check dates"]},
+{c:"MTJ",n:"Montrose / Telluride",s:"CO",r:"mtn",t:["S"],
+d:["Ski Telluride","Telluride's free gondola","Black Canyon of the Gunnison NP","Crested Butte wildflowers","Ouray Hot Springs","Million Dollar Highway","Bridal Veil Falls","Ridgway State Park","Mesa Verde|~2.5 hrs","Ouray Ice Park (winter)"],
+e:["Camp Robber (Montrose)","Horsefly Brewing (Montrose)","Coffee Trader (Montrose)","True Grit Café (Ridgway)","Brown Dog Pizza (Telluride)","Smuggler's Brewpub (Telluride)","Allred's|Top of the gondola","The Secret Stash (Crested Butte)","Ouray Brewery","There... (Telluride)"],
+f:["Montrose is the gateway to Telluride, about 65 miles away","Butch Cassidy robbed his first bank in Telluride in 1889","Telluride's gondola is free","The Black Canyon's walls drop more than 2,000 ft","Ouray is called the 'Switzerland of America'","True Grit (1969) was filmed in Ridgway","A plant near Telluride was an early commercial AC power site (1891)","Crested Butte is a preserved mining town","The Telluride Film Festival runs Labor Day weekend","Winter routes here are often seasonal — check dates"]},
+{c:"MDW",n:"Chicago (Midway)",s:"IL",r:"mw",t:[],
+d:["Art Institute of Chicago","Millennium Park & the Bean","Architecture river cruise","Willis Tower Skydeck","Wrigley Field","Navy Pier","Field Museum","Lincoln Park Zoo|Free","The 606 trail","Second City comedy"],
+e:["Lou Malnati's|Deep dish","Portillo's|Italian beef","Au Cheval|Burger","Girl & the Goat","Alinea","Johnnie's Beef","Pequod's|Caramelized-crust pan pizza","Superdawg","Manny's Deli","Big Star|Tacos"],
+f:["Midway is Southwest's main Chicago airport","The first skyscraper went up here in 1885","The Chicago River is dyed green for St. Patrick's Day","Engineers reversed the river's flow in 1900","The Ferris wheel debuted at Chicago's 1893 fair","Twinkies were invented here","'Windy City' may refer to politicians, not weather","Chicago has 26 miles of lakefront","Midway was renamed in 1949 for the Battle of Midway","Midway's runways are boxed in by city blocks"]},
+{c:"CVG",n:"Cincinnati",s:"OH",r:"mw",t:[],
+d:["Findlay Market","Over-the-Rhine","Cincinnati Zoo","National Underground Railroad Freedom Center","Cincinnati Art Museum|Free","Krohn Conservatory","Roebling Suspension Bridge","Newport Aquarium","Kings Island","Reds game at Great American Ball Park"],
+e:["Skyline Chili","Camp Washington Chili","Graeter's|Ice cream","Montgomery Inn|Ribs","Sotto","Taft's Ale House","Holtman's Donuts","Pepp & Dolores","Boca","Gold Star Chili"],
+f:["CVG is actually in Kentucky","The Reds were the first pro baseball team (1869)","Cincinnati chili is spiced with cinnamon and served on spaghetti","Over-the-Rhine is one of the largest intact 19th-century districts in the US","The Roebling Bridge was a prototype for the Brooklyn Bridge","Procter & Gamble is headquartered here","The Cincinnati Zoo is the second-oldest in the US","The last passenger pigeon died at the zoo in 1914","Cincinnati was nicknamed 'Porkopolis'","The city was a key Underground Railroad crossing"]},
+{c:"CMH",n:"Columbus",s:"OH",r:"mw",t:[],
+d:["German Village","Short North Arts District","Columbus Zoo","COSI science center","Ohio Stadium & Ohio State","Franklin Park Conservatory","Scioto Mile","North Market","Hocking Hills|~1 hr","National Veterans Memorial and Museum"],
+e:["Schmidt's Sausage Haus|Cream puffs","Thurman Café|Huge burgers","Jeni's Splendid Ice Creams","Katalina's","Lindey's","Buckeye Donuts|24 hours","Fox in the Snow|Bakery","The Pearl","Pistacia Vera","Tasi Café"],
+f:["Wendy's was founded here in 1969","White Castle is headquartered in Columbus","Ohio State is one of the largest universities in the US","Companies test-market products here","Columbus is Ohio's largest city","Jeni's started at North Market","Jack Hanna directed the Columbus Zoo","Ohio Stadium seats over 100,000","German Village is brick-paved and walkable","The National Veterans Memorial opened in 2018"]},
+{c:"IND",n:"Indianapolis",s:"IN",r:"mw",t:[],
+d:["Indianapolis Motor Speedway & museum","Monument Circle","Children's Museum|World's largest","White River State Park","Canal Walk","Newfields|Art museum and gardens","Mass Ave","Kurt Vonnegut Museum","Lucas Oil Stadium","Fountain Square"],
+e:["St. Elmo Steak House|Shrimp cocktail","Shapiro's Deli","Milktooth|Brunch","Bluebeard","Mug-N-Bun|Root beer drive-in","The Workingman's Friend|Burgers","Rathskeller|German","Shoefly Public House","Tinker Street","Iozzo's Garden of Italy"],
+f:["The Indy 500 is the largest single-day sporting event in the world","The Brickyard still has one yard of original bricks","The breaded pork tenderloin is the signature sandwich","The Children's Museum is the largest in the world","Indy has more war memorials than any US city but DC","Kurt Vonnegut was born here","Eli Lilly is headquartered here","The Colts moved from Baltimore in 1984","The Speedway infield could fit Vatican City, Yankee Stadium and the Rose Bowl","Monument Circle is the city's center point"]},
+{c:"MCI",n:"Kansas City",s:"MO",r:"mw",t:[],
+d:["Nelson-Atkins Museum|Free, giant shuttlecocks","National WWI Museum & Memorial","Country Club Plaza","18th & Vine Jazz District","Negro Leagues Baseball Museum","Chiefs game at Arrowhead","Crossroads Arts District","Union Station","City Market","Boulevard Brewing tour"],
+e:["Joe's Kansas City Bar-B-Que|In a gas station","Arthur Bryant's","Q39","Gates Bar-B-Q","Jack Stack","Stroud's|Fried chicken","Town Topic|24-hour diner","Corvino","LC's Bar-B-Q","The Peanut|Wings"],
+f:["KC claims more fountains than any city but Rome","Burnt ends started here","Kansas City spans two states","The WWI Museum is America's official memorial to the war","The Negro National League was founded here in 1920","Kansas City jazz shaped swing and bebop","Hallmark is headquartered here","The KC strip steak is named for the city","Arrowhead is one of the loudest stadiums in the NFL","KC has 100+ barbecue joints"]},
+{c:"MKE",n:"Milwaukee",s:"WI",r:"mw",t:[],
+d:["Milwaukee Art Museum|Calatrava wings","Harley-Davidson Museum","Lakefront Brewery tour","Historic Third Ward","Milwaukee RiverWalk","Summerfest (summer)","Miller Brewery tour","Bucks game at Fiserv Forum","Mitchell Park Domes","Brewers game"],
+e:["Kopp's Frozen Custard","Leon's Frozen Custard","Mader's|German since 1902","Solly's Grille|Butter burgers","Lakefront Brewery|Friday fish fry","Comet Café","Milwaukee Public Market","Odd Duck","Sobelman's|Bloody Marys and burgers","Ardent"],
+f:["Milwaukee is known as 'Brew City'","Harley-Davidson was founded here in 1903","Summerfest is billed as the world's largest music festival","Happy Days and Laverne & Shirley were set here","Friday fish fries are a weekly tradition","The art museum's wings open and close daily","It's called the frozen custard capital","The Bucks won the NBA title in 2021","German immigrants built the brewing industry","Lake Michigan forms the city's eastern edge"]},
+{c:"MSP",n:"Minneapolis / St. Paul",s:"MN",r:"mw",t:[],
+d:["Mall of America","Minneapolis Sculpture Garden|Spoonbridge and Cherry","Walker Art Center","Mill City Museum","Stone Arch Bridge","Chain of Lakes","First Avenue|Prince's club","Paisley Park","Minnehaha Falls","Guthrie Theater's Endless Bridge"],
+e:["Matt's Bar|Jucy Lucy","5-8 Club|Juicy Lucy","Owamni|Indigenous cuisine","Hai Hai","Spoon and Stable","Al's Breakfast|14 stools","Young Joni","Pizza Lucé","Kramarczuk's","Midtown Global Market"],
+f:["Southwest flies into MSP Terminal 2","The skyway system links about 9.5 miles of downtown","Minnesota has 11,842 lakes, not just 10,000","Prince was from Minneapolis","Mall of America is the largest mall in the US","Matt's and the 5-8 Club both claim the Juicy Lucy","General Mills and Target are headquartered here","The Mississippi starts in northern Minnesota","St. Paul is the state capital","The Twin Cities have more theater seats per capita than most US cities"]},
+{c:"STL",n:"St. Louis",s:"MO",r:"mw",t:[],
+d:["Gateway Arch|Tram to the top","Forest Park|Free zoo, art and science museums","City Museum","Anheuser-Busch brewery tour","Missouri Botanical Garden","Cathedral Basilica mosaics","Cardinals game at Busch Stadium","Delmar Loop","Soulard Market","Laclede's Landing"],
+e:["Ted Drewes Frozen Custard","Pappy's Smokehouse","Imo's Pizza|Provel cheese","Gioia's Deli|Hot salami","Charlie Gitto's|Toasted ravioli","Crown Candy Kitchen","Bogart's Smokehouse","Pho Grand","Olive + Oak","Sidney Street Café"],
+f:["The Gateway Arch is 630 ft tall","St. Louis hosted the 1904 World's Fair and Olympics","Toasted ravioli and gooey butter cake are local inventions","St. Louis pizza uses Provel cheese","Anheuser-Busch was founded here","Chuck Berry was from St. Louis","St. Louis businessmen funded Lindbergh's Spirit of St. Louis","The zoo is free","Forest Park is bigger than Central Park","The Cardinals have 11 World Series titles"]},
+{c:"OMA",n:"Omaha",s:"NE",r:"mw",t:["S"],
+d:["Henry Doorly Zoo","Old Market","Joslyn Art Museum","Durham Museum|In Union Station","Lauritzen Gardens","Bob Kerrey Pedestrian Bridge|Stand in two states","College World Series (June)","Strategic Air Command & Aerospace Museum","Gene Leahy Mall","Boys Town"],
+e:["Gorat's|Warren Buffett's steakhouse","Block 16","Dante|Wood-fired pizza","Upstream Brewing","Kitchen Table","Stella's Bar & Grill|Burgers","Bärchen Beer Garden","Le Bouillon","Mama's Pizza","Spezia"],
+f:["Warren Buffett lives and works in Omaha","The Henry Doorly Zoo is often ranked the best in the world","The Reuben sandwich may have been invented here","Swanson introduced the TV dinner here in 1953","The College World Series has been here since 1950","Boys Town was founded nearby in 1917","Offutt AFB is home to US Strategic Command","Union Pacific is headquartered here","Omaha Steaks started here in 1917","Lewis and Clark held councils with tribes nearby"]},
+{c:"DTW",n:"Detroit",s:"MI",r:"mw",t:["F"],
+d:["Henry Ford Museum & Greenfield Village","Detroit Institute of Arts|Rivera murals","Motown Museum","Eastern Market|Saturdays","Detroit Riverwalk","Belle Isle","Tigers game at Comerica Park","Guardian Building","Fox Theatre","Michigan Central Station"],
+e:["Lafayette & American Coney Island|Pick a side","Buddy's Pizza|Original Detroit-style","Supino Pizzeria","Selden Standard","Slows Bar BQ","Al Ameer (Dearborn)","Shatila Bakery","Hudson Café","Joe Muer Seafood","Mexicantown taquerias"],
+f:["Detroit is the 'Motor City'","Motown Records started here in 1959","Detroit-style pizza began at Buddy's in 1946","Detroit is north of Windsor, Canada","Lafayette and American Coney sit side by side","Henry Ford's assembly line changed manufacturing","Belle Isle is larger than Central Park","Dearborn has one of the largest Arab American communities","Vernors ginger ale is from Detroit","Southwest nonstops from AUS begin March 11, 2027"]}
+);
+
+D.push(
+{c:"ATL",n:"Atlanta",s:"GA",r:"south",t:[],
+d:["Georgia Aquarium","World of Coca-Cola","MLK Jr. National Historical Park","Center for Civil and Human Rights","Atlanta BeltLine","Piedmont Park","Ponce City Market","Atlanta Botanical Garden","Stone Mountain Park","College Football Hall of Fame"],
+e:["The Varsity|'What'll ya have?'","Mary Mac's Tea Room","Busy Bee Café|Fried chicken","Fox Bros. Bar-B-Q","Gunshow","Antico Pizza","Bacchanalia","Paschal's|Civil rights-era landmark","Buford Highway restaurants","Krog Street Market"],
+f:["ATL is the world's busiest airport by passengers","Coca-Cola was invented here in 1886","Martin Luther King Jr. was born in Atlanta","CNN was founded here in 1980","Sherman's troops burned the city in 1864","About 70 streets have 'Peachtree' in the name","Atlanta hosted the 1996 Summer Olympics","It's called 'the city in a forest' for its tree canopy","Delta is headquartered here","Atlanta began as a railroad terminus called Terminus"]},
+{c:"MEM",n:"Memphis",s:"TN",r:"south",t:[],
+d:["Graceland","National Civil Rights Museum|At the Lorraine Motel","Beale Street","Sun Studio","Stax Museum of American Soul Music","Peabody Ducks march|11am and 5pm","Bass Pro Shops at the Pyramid","Shelby Farms Park","Big River Crossing|Walk to Arkansas","Memphis Rock 'n' Soul Museum"],
+e:["Central BBQ","Charlie Vergos' Rendezvous|Dry-rub ribs","Gus's World Famous Fried Chicken","Cozy Corner|BBQ Cornish hen","The Four Way|Soul food","Arcade Restaurant|Since 1919","Hog & Hominy","Jim Neely's Interstate Bar-B-Que","Payne's Bar-B-Q","Bounty on Broad"],
+f:["FedEx's world hub is at Memphis airport","Memphis is called the home of the blues and birthplace of rock 'n' roll","Elvis recorded his first songs at Sun Studio","MLK was assassinated at the Lorraine Motel in 1968","The Peabody ducks have marched since the 1930s","The city is named after ancient Memphis in Egypt","Memphis is known for dry-rub ribs","Graceland is one of the most visited homes in the US","Stax launched Otis Redding and Isaac Hayes","Memphis sits on bluffs above the Mississippi"]},
+{c:"BNA",n:"Nashville",s:"TN",r:"south",t:[],
+d:["Grand Ole Opry","Ryman Auditorium","Country Music Hall of Fame","Lower Broadway honky-tonks","Parthenon in Centennial Park","Johnny Cash Museum","The Hermitage","RCA Studio B","Bluebird Café|Reserve early","National Museum of African American Music"],
+e:["Prince's Hot Chicken|The original","Hattie B's","Arnold's Country Kitchen|Meat-and-three","Loveless Café|Biscuits","Monell's|Family-style","Martin's Bar-B-Que","Biscuit Love","Husk","Rolf & Daughters","Pancake Pantry"],
+f:["Nashville is 'Music City'","Hot chicken started at Prince's","The Parthenon replica holds a 42-ft statue of Athena","The Grand Ole Opry has broadcast since 1925","The Goo Goo Cluster was invented here in 1912","Nashville was once called 'Athens of the South'","The Ryman is known as the 'Mother Church of Country Music'","Locals call the AT&T tower the 'Batman Building'","Jack Daniel's distillery is about 75 miles away","The Bluebird Café seats only about 90 people"]},
+{c:"MSY",n:"New Orleans",s:"LA",r:"south",t:[],
+d:["French Quarter","Jackson Square","Garden District","National WWII Museum","Frenchmen Street jazz","Preservation Hall","St. Charles streetcar","City Park & Café du Monde","Swamp tour","Mardi Gras World"],
+e:["Café du Monde|Beignets","Commander's Palace","Dooky Chase's","Willie Mae's Scotch House|Fried chicken","Parkway Bakery|Po'boys","Galatoire's","Coop's Place","Domilise's","Cochon","Central Grocery|Muffuletta"],
+f:["About half the city sits below sea level","New Orleans is the birthplace of jazz","Louisiana has parishes instead of counties","The Sazerac is the official city cocktail","The St. Charles line is the oldest operating streetcar in the world","Tombs are above ground because of the high water table","The WWII Museum is here because Higgins boats were built here","MSY comes from the old Moisant Stock Yards","Mardi Gras dates back to the 1700s here","The airport is named for Louis Armstrong"]},
+{c:"RDU",n:"Raleigh / Durham",s:"NC",r:"south",t:[],
+d:["North Carolina Museum of Art & park","NC Museum of Natural Sciences|Free","Sarah P. Duke Gardens","Duke Chapel","UNC Chapel Hill campus","Durham Bulls game","American Tobacco Campus","William B. Umstead State Park","Pullen Park carousel","Morehead Planetarium"],
+e:["Poole's Diner|Mac and cheese","The Pit|Whole-hog BBQ","Bida Manda|Laotian","Mandolin","Lantern (Chapel Hill)","Mama Dip's","Saltbox Seafood Joint","Sam Jones BBQ","Neal's Deli","Crook's Corner"],
+f:["Research Triangle Park is the largest research park in the US","The Durham Bulls inspired the film Bull Durham","Duke vs. UNC is one of sport's great rivalries","UNC (1795) was the first public university to hold classes","Raleigh is the 'City of Oaks'","Raleigh is named for Sir Walter Raleigh","North Carolina grows more sweet potatoes than any state","Eastern and Lexington-style BBQ are a real local debate","Durham was once the tobacco capital","Pepsi was invented in New Bern, NC"]},
+{c:"CHS",n:"Charleston",s:"SC",r:"south",t:["S"],
+d:["Historic District walk","Rainbow Row","Fort Sumter","Middleton Place","Boone Hall Plantation","Sullivan's Island beach","Folly Beach","Angel Oak","King Street","Waterfront Park pineapple fountain"],
+e:["Husk","FIG","Rodney Scott's BBQ","Leon's Oyster Shop","Bowens Island Restaurant","Callie's Hot Little Biscuit","Poogan's Porch","167 Raw","Slightly North of Broad","Lewis Barbecue"],
+f:["The Civil War began at Fort Sumter in 1861","Charleston is the 'Holy City' for its many steeples","The pineapple is a symbol of welcome here","The Charleston Museum (1773) is the first museum in the US","The Charleston dance was named for the city","She-crab soup is the signature dish","The first golf club in the US formed here in 1786","Angel Oak is estimated at 400+ years old","Gullah Geechee culture thrives in the Lowcountry","Rainbow Row is the longest cluster of Georgian row houses in the US"]},
+{c:"TYS",n:"Knoxville / Smokies",s:"TN",r:"south",t:["S"],
+d:["Great Smoky Mountains NP|~1 hr","Gatlinburg","Dollywood","Market Square","Sunsphere","Ijams Nature Center","Neyland Stadium","Old City","Knoxville Museum of Art|Free","Cades Cove loop"],
+e:["Sweet P's BBQ","Stock & Barrel|Burgers","Oliver Royale","Yassin's Falafel House","J.C. Holdway","Kaizen","Copper Cellar","Old Mill Restaurant (Pigeon Forge)","Pete's Coffee Shop","Tupelo Honey"],
+f:["The Sunsphere was built for the 1982 World's Fair","Mountain Dew was created in Knoxville in the 1940s","The Smokies are the most visited US national park","Neyland Stadium seats over 100,000","Cormac McCarthy grew up in Knoxville","Dolly Parton is from nearby Sevier County","The Women's Basketball Hall of Fame is here","Knoxville was Tennessee's first capital","Cades Cove is a top spot for black bears","Seasonal route — check dates"]},
+{c:"SAV",n:"Savannah",s:"GA",r:"south",t:["N"],
+d:["Forsyth Park","The historic squares","River Street","Bonaventure Cemetery","Tybee Island","Wormsloe|Oak-lined avenue","SCAD Museum of Art","Hilton Head Island","Mercer-Williams House","Ghost tour"],
+e:["Mrs. Wilkes' Dining Room|Family-style lunch","The Grey|In an old Greyhound station","Leopold's Ice Cream","The Olde Pink House","Crystal Beer Parlor","Husk Savannah","Back in the Day Bakery","Elizabeth on 37th","Sweet Spice|Jamaican","The Collins Quarter"],
+f:["Savannah was founded in 1733 by James Oglethorpe","It's Georgia's oldest city","You can carry an open drink in parts of downtown","The historic district has 22 squares","Midnight in the Garden of Good and Evil is set here","The Girl Scouts were founded here in 1912","Forrest Gump's bench scene was filmed in Chippewa Square","Its St. Patrick's Day parade is one of the largest in the US","Sherman spared Savannah in 1864","The Port of Savannah is one of the busiest in the US"]},
+{c:"FLL",n:"Fort Lauderdale",s:"FL",r:"fl",t:[],
+d:["Las Olas Boulevard","Fort Lauderdale Beach","Water taxi on the canals","Everglades airboat ride","Bonnet House","Hugh Taylor Birch State Park","Hollywood Beach Broadwalk","NSU Art Museum","Butterfly World","Day cruise from Port Everglades"],
+e:["Southport Raw Bar","Casa D'Angelo","Lester's Diner|24 hours","Coconuts|Waterfront","Boatyard","Le Tub (Hollywood)|Burgers","Rok:Brgr","Taverna Opa","Ernie's Bar-B-Q","Kaluz"],
+f:["Fort Lauderdale is called the 'Venice of America'","It has about 165 miles of canals","Where the Boys Are (1960) made it a spring-break hub","Port Everglades is one of the busiest cruise ports","The city is named for Major William Lauderdale","It's called the yachting capital of the world","The Everglades are about 30 minutes west","FLL is just minutes from the beach","Hollywood, FL is next door","The Wave Wall lines the beachfront"]},
+{c:"JAX",n:"Jacksonville",s:"FL",r:"fl",t:[],
+d:["Jacksonville Beach","St. Augustine|~45 min","Riverside Avondale","Cummer Museum of Art & Gardens","Kingsley Plantation","Amelia Island","Fort Caroline","Jacksonville Zoo","Friendship Fountain","Jaguars game"],
+e:["Metro Diner","Beach Road Chicken Dinners","Clark's Fish Camp","Safe Harbor Seafood","Southern Grounds","Taverna","bb's","Orsay","Bono's Pit Bar-B-Q","The Floridian (St. Augustine)"],
+f:["Jacksonville is the largest city by area in the contiguous US","Lynyrd Skynyrd formed here","The St. Johns River flows north","Jacksonville was the 'Winter Film Capital' before Hollywood","It's Florida's most populous city","The Great Fire of 1901 burned most of downtown","St. Augustine is the oldest European-founded city in the US","Two Navy bases are in the city","It has the largest urban park system in the US","The Jaguars joined the NFL in 1995"]},
+{c:"MIA",n:"Miami",s:"FL",r:"fl",t:[],
+d:["South Beach & Art Deco District","Wynwood Walls","Little Havana — Calle Ocho","Vizcaya Museum & Gardens","Everglades National Park","Key Biscayne","Pérez Art Museum","Coral Gables' Venetian Pool","Drive to Key West","Bayfront Park"],
+e:["Versailles|Cuban coffee","Joe's Stone Crab","Sanguich de Miami","Garcia's Seafood","Mandolin Aegean Bistro","Zak the Baker","La Sandwicherie","Ball & Chain","Cvi.che 105","Mignonette"],
+f:["Miami is the only major US city founded by a woman, Julia Tuttle","South Beach has the largest Art Deco collection in the world","PortMiami is the cruise capital of the world","Miami Beach is a separate city","About 70% of residents are Hispanic","Art Basel Miami Beach is each December","I-95 ends in Miami","The Everglades are the largest subtropical wilderness in the US","Cafecito is a daily ritual","Miami was incorporated in 1896"]},
+{c:"MCO",n:"Orlando",s:"FL",r:"fl",t:[],
+d:["Walt Disney World","Universal Orlando & Epic Universe","Kennedy Space Center|~1 hr","Winter Park","Lake Eola","Gatorland","Wekiwa Springs State Park","Blue Spring|Manatees in winter","Harry P. Leu Gardens","ICON Park"],
+e:["Beth's Burger Bar","Domu|Ramen","Hunger Street Tacos","Se7en Bites|Bakery","Black Bean Deli|Cuban","Hawkers|Asian street food","Victoria & Albert's|Disney fine dining","Boma (Animal Kingdom Lodge)","Pig Floyd's","The Ravenous Pig"],
+f:["Orlando is the most visited city in the US","Walt Disney World is about twice the size of Manhattan","Universal's Epic Universe opened in 2025","MCO's code comes from the old McCoy Air Force Base","Kennedy Space Center is an hour east","Lake Eola's swans are a city symbol","Orlando has about 100 lakes","The city was once called Jernigan","Citrus groves once covered the area","Disney World opened in 1971"]},
+{c:"TPA",n:"Tampa",s:"FL",r:"fl",t:[],
+d:["Ybor City","Tampa Riverwalk","Clearwater Beach","Busch Gardens","Florida Aquarium","Dalí Museum (St. Pete)","Armature Works","Henry B. Plant Museum","St. Pete Pier","Weeki Wachee mermaids"],
+e:["Columbia Restaurant|Florida's oldest (1905)","Bern's Steak House","La Segunda Bakery|Cuban bread","Ulele","Frenchy's (Clearwater)","Datz","Kojak's House of Ribs","Rooster & the Till","Wright's Gourmet House","Alessi Bakery"],
+f:["The Columbia, opened 1905, is Florida's oldest restaurant","Tampa's Cuban sandwich includes salami","Ybor City was once the cigar capital of the world","Gasparilla is a pirate-themed festival each January","MacDill AFB houses US Central Command","Tampa Bay is the lightning capital of the US","The first scheduled airline flight flew St. Pete to Tampa in 1914","Bern's has one of the largest wine cellars in the world","Busch Gardens opened in 1959","Weeki Wachee mermaid shows began in 1947"]},
+{c:"RSW",n:"Fort Myers / Sanibel",s:"FL",r:"fl",t:["S"],
+d:["Edison & Ford Winter Estates","Sanibel & Captiva shelling","Fort Myers Beach","J.N. 'Ding' Darling NWR","Naples Pier","Corkscrew Swamp Sanctuary","Lovers Key State Park","Spring training|Red Sox and Twins","Koreshan State Park","Six Mile Cypress Slough"],
+e:["Doc Ford's","The Bubble Room (Captiva)","The Island Cow (Sanibel)","Ford's Garage","Cabbage Key","Pinchers","The Veranda","The Mucky Duck (Captiva)","Lighthouse Café (Sanibel)","Twisted Lemon"],
+f:["Thomas Edison wintered here starting in 1886","Sanibel is so good for shells that locals call bending over the 'Sanibel stoop'","Hurricane Ian hit the area hard in 2022","Fort Myers is the 'City of Palms'","The Red Sox and Twins hold spring training here","Visitors tape dollar bills to the walls at Cabbage Key","Manatees gather in warm waters in winter","The Caloosahatchee River runs through town","Sanibel is a wildlife-first island","Seasonal route — check dates"]},
+{c:"ECP",n:"Panama City Beach",s:"FL",r:"fl",t:["S"],
+d:["The beach","St. Andrews State Park","Shell Island","Pier Park","Russell-Fields Pier","Dolphin cruise","Camp Helen State Park","Rosemary Beach & 30A","Conservation Park trails","Gulf World Marine Park"],
+e:["Schooners|'Last local beach club'","Capt. Anderson's","Pineapple Willy's","Firefly","Andy's Flour Power","Hunt's Oyster Bar","Thomas Donut","Dee's Hangout","Back Beach BBQ","Sharky's"],
+f:["PCB has 27 miles of beach","ECP opened in 2010 — the first new US commercial airport since 9/11","It was long a spring-break capital","Shell Island is undeveloped","Tyndall AFB is nearby","Hurricane Michael struck in 2018","The sand is nearly pure quartz","Seaside (The Truman Show) is about 45 min west","PCB markets itself as having the 'World's Most Beautiful Beaches'","Seasonal route — check dates"]},
+{c:"PNS",n:"Pensacola",s:"FL",r:"fl",t:["S"],
+d:["Pensacola Beach","National Naval Aviation Museum|Free","Blue Angels practice|Spring–fall","Fort Pickens","Historic Pensacola Village","Palafox Street","Pensacola Lighthouse","Gulf Islands National Seashore","Perdido Key","Big Lagoon State Park"],
+e:["Joe Patti's Seafood|Market","McGuire's Irish Pub|Dollar-bill walls","Peg Leg Pete's","The Fish House","Jaco's","Five Sisters Blues Café","Union Public House","Flounder's Chowder House","Hemingway's Island Grill","The Grand Marlin"],
+f:["Pensacola calls itself 'America's First Settlement' (1559)","It has flown five national flags","It's the 'Cradle of Naval Aviation'","The Blue Angels are based here","McGuire's walls hold about a million dollar bills","The Naval Aviation Museum displays 150+ aircraft","Geronimo was held at Fort Pickens","Pensacola Beach is on Santa Rosa Island","The lighthouse dates to 1859","Seasonal route — check dates"]},
+{c:"VPS",n:"Destin / Fort Walton Beach",s:"FL",r:"fl",t:["N"],
+d:["Destin beaches","Crab Island sandbar","HarborWalk Village","Henderson Beach State Park","Deep-sea fishing charter","Gulfarium Marine Adventure Park","Air Force Armament Museum","Seaside & 30A","Grayton Beach State Park","Okaloosa Island Pier"],
+e:["Dewey Destin's","Boshamps","AJ's Seafood & Oyster Bar","Harry T's","McGuire's Destin","Back Porch","Brotula's","The Donut Hole","Louisiana Lagniappe","Marina Café"],
+f:["Destin calls itself the 'World's Luckiest Fishing Village'","The Destin Fishing Rodeo runs every October","Eglin AFB is one of the largest Air Force bases","VPS shares its runways with Eglin","Crab Island is a sandbar party spot","The water's emerald color comes from algae and white sand","Seaside was the setting for The Truman Show","Destin is named for Leonard Destin","Fort Walton Beach has a Native American temple mound","The Gulfarium opened in 1955"]},
+{c:"SRQ",n:"Sarasota",s:"FL",r:"fl",t:["N"],
+d:["The Ringling|Circus museum and Ca' d'Zan","Siesta Key Beach","Lido Key & St. Armands Circle","Marie Selby Botanical Gardens","Myakka River State Park","Anna Maria Island","Mote Marine Aquarium","Venice Beach shark teeth","Van Wezel Performing Arts Hall","Longboat Key"],
+e:["Owen's Fish Camp","Columbia Restaurant (St. Armands)","Yoder's Amish Restaurant|Pie","Indigenous","Selva Grill","Phillippi Creek Oyster Bar","Siesta Key Oyster Bar","Anna Maria Oyster Bar","Star Fish Co. (Cortez)","Der Dutchman"],
+f:["Ringling Bros. Circus wintered in Sarasota","Siesta Key's sand is about 99% quartz and stays cool","Venice is the 'Shark Tooth Capital of the World'","Pinecraft is a winter Amish community","Mote Marine researches sharks and reefs","Ca' d'Zan means 'House of John' in Venetian","Myakka has alligators and a canopy walkway","The Orioles hold spring training here","Sarasota claims one of the first golf courses in the US (1886)","St. Armands Circle was designed by John Ringling"]}
+);
+
+D.push(
+{c:"BWI",n:"Baltimore",s:"MD",r:"ne",t:[],
+d:["Inner Harbor & National Aquarium","Fort McHenry","Fells Point","Orioles game at Camden Yards","Annapolis & the Naval Academy","B&O Railroad Museum","American Visionary Art Museum","Walters Art Museum|Free","Federal Hill Park","DC by MARC train"],
+e:["Faidley's|Crab cakes in Lexington Market","Koco's Pub|Huge crab cakes","Thames Street Oyster House","Attman's Deli","G&M Restaurant","Captain James Crab House","Cosima","Chaps Pit Beef","Berger Cookies (a stop, not a meal)","Lexington Market vendors"],
+f:["The Star-Spangled Banner was written at Fort McHenry in 1814","Old Bay seasoning was created here","The B&O was the first US common-carrier railroad","Babe Ruth was born in Baltimore","The Ravens are named for Edgar Allan Poe's poem","Natty Boh is the local beer","Camden Yards started the retro ballpark era","Baltimore is 'Charm City'","BWI is named for Thurgood Marshall","Johns Hopkins is headquartered here"]},
+{c:"BOS",n:"Boston",s:"MA",r:"ne",t:[],
+d:["Freedom Trail","Fenway Park","Boston Common & Public Garden","North End","Museum of Fine Arts","Isabella Stewart Gardner Museum","Harvard & Cambridge","Boston Tea Party Ships","Whale watching","Salem or Cape Cod day trip"],
+e:["Neptune Oyster","Union Oyster House|Since 1826","Mike's Pastry|Cannoli","Regina Pizzeria","Giacomo's","Row 34","Sullivan's at Castle Island","Santarpio's","Legal Sea Foods","Galleria Umberto|Pizza, cash only"],
+f:["Boston Common (1634) is the oldest public park in the US","The first US subway opened here in 1897","The Boston Marathon is the world's oldest annual marathon","The Tea Party happened in 1773","Fenway Park (1912) is MLB's oldest ballpark","Dunkin' started nearby in Quincy","Harvard was founded in 1636","Boston cream pie is the state dessert","'Beantown' comes from baked beans and molasses","Logan airport is named for Gen. Edward Lawrence Logan"]},
+{c:"PIT",n:"Pittsburgh",s:"PA",r:"ne",t:[],
+d:["Duquesne Incline","Andy Warhol Museum","Carnegie Museums","Pirates game at PNC Park","Phipps Conservatory","Strip District","Mount Washington overlook","Fallingwater|~1.5 hrs","Point State Park","Kennywood"],
+e:["Primanti Bros.|Fries in the sandwich","DiAnoia's Eatery","Pamela's Diner|Crepe pancakes","Gaucho Parrilla Argentina","Fat Head's Saloon","Apteka","Driftwood Oven","S&D Polish Deli|Pierogies","Prantl's Bakery|Burnt almond torte","Smallman Galley"],
+f:["Pittsburgh has 446 bridges","Mister Rogers' Neighborhood was made here","The Big Mac was invented near Pittsburgh in 1967","Heinz is headquartered here","Andy Warhol was born in Pittsburgh","The Monongahela Incline (1870) is the oldest in the US","Jonas Salk developed the polio vaccine here","KDKA was the first commercial radio station (1920)","'Yinz' is the local plural 'you'","Three rivers meet at the Point"]},
+{c:"DCA",n:"Washington, DC",s:"DC",r:"ne",t:[],
+d:["National Mall & monuments","Smithsonian museums|Free","National Air and Space Museum","US Capitol tour","Library of Congress","Arlington National Cemetery","Georgetown","Tidal Basin cherry blossoms|Late March–April","Mount Vernon","Kennedy Center"],
+e:["Ben's Chili Bowl|Half-smoke","Old Ebbitt Grill","Rose's Luxury","Le Diplomate","Founding Farmers","Compass Rose","Maydan","Albi","Union Market","The Dabney"],
+f:["DC is not part of any state","The Washington Monument is the tallest stone structure in the world","DCA's River Visual approach follows the Potomac","Prohibited airspace P-56 covers the Mall and White House","The Smithsonian runs 21 museums and the zoo","Japan gave the cherry trees in 1912","The Library of Congress is the largest library in the world","The Height Act keeps the skyline low","The half-smoke is DC's signature sausage","Udvar-Hazy holds the Space Shuttle Discovery"]},
+{c:"CUN",n:"Cancún",s:"Mexico",r:"intl",t:["P"],
+d:["Hotel Zone beaches","Isla Mujeres ferry","Chichén Itzá","Swim in a cenote","Tulum ruins","Xcaret park","Cozumel snorkeling","Isla Holbox","MUSA underwater museum","Playa del Carmen's 5th Avenue"],
+e:["La Habichuela|Since 1977","Lorenzillo's|Lobster","El Fish Fritanga","Tacos Rigo","Harry's|Steakhouse","La Parrilla","Parque de las Palapas|Street food","Mercado 28","Navíos","Rooster Café"],
+f:["Cancún was planned by the Mexican government in the 1970s","The Hotel Zone is shaped like the number 7","The Mesoamerican Reef is the second-largest barrier reef","Chichén Itzá is one of the New Seven Wonders","MUSA has 500+ underwater sculptures","The Yucatán has thousands of cenotes","Maya is still spoken across the region","Mexico uses the peso; dollars are widely accepted in tourist areas","You need a passport","The name is often translated as 'nest of snakes'"]},
+{c:"SJD",n:"Los Cabos",s:"Mexico",r:"intl",t:["P","S"],
+d:["El Arco boat tour","Lover's Beach","Whale watching (Dec–Apr)","San José del Cabo Art Walk|Thursdays","Todos Santos","Cabo Pulmo snorkeling","Flora Farms","Medano Beach","Sunset sailing cruise","Snorkel Chileno or Santa María Bay"],
+e:["Flora's Field Kitchen","El Farallon|Cliffside seafood","Mi Casa","Tacos Gardenias","La Lupita","Acre","Las Guacamayas","Edith's","The Office|On Medano Beach","Nicksan|Sushi"],
+f:["The Sea of Cortez is called 'the aquarium of the world'","Los Cabos is two towns: Cabo San Lucas and San José del Cabo","El Arco marks Land's End, the tip of Baja","Gray and humpback whales arrive each winter","Cabo Pulmo is one of the oldest reefs in the Americas","The area gets about 350 sunny days a year","Sammy Hagar founded the Cabo Wabo Cantina","Cabo is a marlin fishing capital","Desert meets ocean — many beaches aren't swimmable","You need a passport; seasonal route"]},
+{c:"PVR",n:"Puerto Vallarta",s:"Mexico",r:"intl",t:["P","N"],
+d:["Malecón boardwalk","Zona Romántica","Los Arcos snorkeling","Yelapa by water taxi","Islas Marietas|Permit tours","Sayulita","Vallarta Botanical Garden","Whale watching (Dec–Mar)","Mismaloya","Our Lady of Guadalupe Church"],
+e:["Café des Artistes","La Palapa|On the beach","Pancho's Takos","El Barracuda","Joe Jack's Fish Shack","River Café","Tacos El Moreno","La Leche","Mariscos Cisneros","Café San Angel"],
+f:["The film Night of the Iguana (1964) put it on the map","Banderas Bay is one of the largest bays in Mexico","Humpbacks breed here in winter","It's in Jalisco, the home of tequila","PV is one of Mexico's most LGBTQ-friendly cities","The Malecón is lined with bronze sculptures","The town was once called Las Peñas","The Sierra Madre rises right behind the city","Water taxis reach beaches with no road access","You need a passport"]},
+{c:"LIR",n:"Liberia (Guanacaste)",s:"Costa Rica",r:"intl",t:["P","N"],
+d:["Rincón de la Vieja NP|Hot springs and mud pots","Tamarindo surfing","Playa Conchal","Llano de Cortés waterfall","Palo Verde river safari","Papagayo Peninsula","Arenal Volcano|~3 hrs","Monteverde cloud forest","Zip-lining","Playa Flamingo"],
+e:["Pangas Beach Club (Tamarindo)","Nogui's (Tamarindo)","Green Papaya (Tamarindo)","Seasons by Shlomy","Café Liberia","La Bodega (Tamarindo)","Any local soda|Order the casado","Patagonia (Tamarindo)","Ginger (Playa Hermosa)","Rincón Corobicí"],
+f:["'Pura vida' is the national motto","Costa Rica abolished its army in 1948","The country holds about 5% of the world's biodiversity","Nearby Nicoya is one of the world's Blue Zones","Dry season runs December to April","The currency is the colón; dollars are widely accepted","The Guanacaste tree is the national tree","Liberia is called 'the White City'","Guanacaste joined Costa Rica from Nicaragua in 1824","You need a passport"]},
+{c:"SJO",n:"San José",s:"Costa Rica",r:"intl",t:["P","N"],
+d:["Poás Volcano","La Paz Waterfall Gardens","National Theatre","Pre-Columbian Gold Museum","Mercado Central","Manuel Antonio NP|~3 hrs","Arenal Volcano","Irazú Volcano","Coffee farm tour","Pacuare River rafting"],
+e:["Mercado Central sodas","Restaurante Grano de Oro","Silvestre","Sikwa|Indigenous cuisine","La Esquina de Buenos Aires","Restaurante Nuestra Tierra","Café Rojo","Alma de Amón","Lubnan|Lebanese","Café del Barista"],
+f:["SJO is Juan Santamaría International","San José has been the capital since 1823","The National Theatre opened in 1897","The Gold Museum holds about 1,600 pre-Columbian pieces","Coffee exports built the city","San José was among the first cities with electric street lights (1884)","Costa Ricans call themselves 'Ticos'","The city sits at about 3,800 ft, so it's mild","Restaurant bills include a 10% service charge","You need a passport"]},
+{c:"NAS",n:"Nassau",s:"Bahamas",r:"intl",t:["P","N"],
+d:["Cable Beach","Paradise Island & Atlantis","Queen's Staircase","Fort Fincastle","Rose Island snorkeling","Exuma swimming pigs|Day trip","Arawak Cay Fish Fry","Junkanoo Beach","Pirates of Nassau museum","Blue Lagoon Island"],
+e:["Arawak Cay Fish Fry|Conch salad","Graycliff","Twin Brothers","Dino's Gourmet Conch Salad","Café Matisse","Lukka Kairi","Bahamian Cookin'","Potter's Cay Dock stalls","Goldie's Conch House","Shoal Restaurant"],
+f:["The Bahamas has about 700 islands","The Bahamian dollar is pegged 1:1 to the US dollar","Traffic drives on the left","Junkanoo is the big street festival","Blackbeard once based his pirates here","Parts of Thunderball were filmed here","The Bahamas became independent in 1973","Conch is the national dish","Nassau is on New Providence island","You need a passport"]},
+{c:"PUJ",n:"Punta Cana",s:"Dominican Rep.",r:"intl",t:["P","N"],
+d:["Bávaro Beach","Saona Island","Hoyo Azul cenote","Indigenous Eyes Ecological Reserve","Macao Beach surfing","Catamaran cruise","Altos de Chavón","Santo Domingo's Colonial Zone","Los Haitises National Park","Dune buggy tour"],
+e:["Jellyfish|On Bávaro Beach","La Yola|Over the water","Captain Cook|Seafood","Passion by Martín Berasategui","Huracán Café","Noah","Playa Blanca","Balicana|Asian","Restaurant El Cayuco","Local colmado|Try mangú and tostones"],
+f:["The DR shares the island of Hispaniola with Haiti","Santo Domingo is the oldest European city in the Americas","Merengue and bachata both come from the DR","Baseball is the national passion","Larimar, a blue stone, is found only here","PUJ's terminals have palm-thatched roofs","The currency is the Dominican peso","Columbus landed on Hispaniola in 1492","Saona Island is part of a national park","You need a passport"]},
+{c:"SJU",n:"San Juan",s:"Puerto Rico",r:"intl",t:["S"],
+d:["Old San Juan","El Morro","Castillo San Cristóbal","El Yunque rainforest","Bioluminescent bay|Fajardo or Vieques","Condado Beach","La Placita|Night scene","Flamenco Beach, Culebra","Casa Bacardí","Piñones food kiosks"],
+e:["La Factoría|Cocktail bar","Marmalade","Café Manolín","José Enrique","Lote 23|Food trucks","El Jibarito","Pirilo Pizza","Kasalta|Bakery","Raíces|Mofongo","La Bombonera"],
+f:["Puerto Rico is a US territory — no passport needed","The piña colada was invented in San Juan","El Morro was begun in 1539","Old San Juan is one of the oldest European cities in the Americas","Spanish and English are both official","The currency is the US dollar","The coquí frog's call is everywhere at night","Mofongo is the signature dish","Bacardí runs one of the world's largest rum distilleries here","Puerto Ricans have been US citizens since 1917"]}
+);
+
+let SCHED={"ABQ":{"b":"1–4/d","o":"1–4/d"},"AMA":{"o":"1/d","b":"1/d"},"DAL":{"o":"4–7/d","b":"4–7/d"},"ELP":{"o":"2–4/d","b":"2–4/d"},"HRL":{"o":"1–3/d","b":"1–3/d"},"HOU":{"o":"3/d","b":"3–4/d"},"LBB":{"o":"1–2/d","b":"1/d"},"MAF":{"o":"1/d","b":"1/d"},"OKC":{"o":"1/d","b":"1/d"},"TUL":{"o":"1/d","b":"1/d"},"PHX":{"o":"3–8/d","b":"3–8/d"},"LAS":{"o":"3–8/d","b":"3–8/d"},"BUR":{"o":"1/d","b":"1/d"},"LGB":{"o":"1/d","b":"1/d"},"LAX":{"o":"2–4/d","b":"2–4/d"},"ONT":{"o":"1/d","b":"1/d"},"SNA":{"o":"1/d","b":"1/d"},"SAN":{"o":"2–5/d","b":"2–5/d"},"OAK":{"o":"1/d","b":"1/d"},"SFO":{"o":"1–2/d","b":"1–2/d"},"SJC":{"o":"1–4/d","b":"1–3/d"},"SMF":{"o":"1/d","b":"1/d"},"SEA":{"o":"1/d","b":"1/d"},"PDX":{"o":"? Begins in 2027-06-03","b":"? Begins in 2027-06-03"},"PSP":{"o":"? Begins in 2026-11-21","b":"? Begins in 2026-11-21"},"RNO":{"o":"1/d","b":"1/d"},"STS":{"b":"?","o":"?"},"DEN":{"o":"3–9/d","b":"3–8/d"},"SLC":{"o":"1–2/d","b":"1–2/d"},"BZN":{"o":"? Begins in 2027-06-05","b":"? Begins in 2027-06-05"},"HDN":{"o":"1/d Begins in 2027-03-11","b":"1/d Begins in 2027-03-11"},"MTJ":{"o":"1/d Begins in 2027-03-11","b":"1/d Begins in 2027-03-11"},"MDW":{"o":"3–5/d","b":"3–5/d"},"CVG":{"o":"1/d","b":"1/d"},"CMH":{"o":"1–2/d","b":"1–2/d"},"IND":{"o":"1–3/d","b":"1–3/d"},"MCI":{"o":"1–3/d","b":"1–3/d"},"MKE":{"o":"1/d","b":"1/d"},"MSP":{"o":"1/d","b":"1/d"},"STL":{"o":"1–3/d","b":"1–3/d"},"OMA":{"o":"1/d Begins in 2026-11-21","b":"1/d Begins in 2026-11-21"},"DTW":{"o":"? Begins in 2027-03-11","b":"? Begins in 2027-03-11"},"ATL":{"o":"1–3/d","b":"1–3/d"},"MEM":{"o":"1/d","b":"1/d"},"BNA":{"o":"3–8/d","b":"3–9/d"},"MSY":{"o":"3–5/d","b":"3–5/d"},"RDU":{"o":"1–2/d","b":"1–2/d"},"CHS":{"o":"1/d Begins in 2027-03-11","b":"1/d Begins in 2027-03-11"},"TYS":{"o":"1/w","b":"1/w"},"SAV":{"o":"3/w Begins in 2027-06-05","b":"3/w Begins in 2027-06-05"},"FLL":{"o":"1/d","b":"1/d"},"JAX":{"o":"1/d","b":"1/d"},"MIA":{"o":"1/d","b":"1/d"},"MCO":{"o":"3–6/d","b":"3–7/d"},"TPA":{"o":"2–4/d","b":"2–5/d"},"RSW":{"o":"? Begins in 2027-03-13","b":"? Begins in 2027-03-13"},"ECP":{"o":"1/d","b":"1/d"},"PNS":{"o":"?","b":"?"},"VPS":{"o":"?","b":"?"},"SRQ":{"o":"? Begins in 2027-06-05","b":"? Begins in 2027-06-05"},"BWI":{"o":"2–5/d","b":"2–4/d"},"BOS":{"o":"1/d","b":"1/d"},"PIT":{"o":"1/d","b":"1/d"},"DCA":{"o":"1/d","b":"1/d"},"CUN":{"o":"1/d","b":"1/d"},"SJD":{"o":"1/d","b":"1/d"},"PVR":{"o":"1/d Begins in 2026-11-21","b":"1/d Begins in 2026-11-21"},"LIR":{"o":"3/w Begins in 2027-06-05","b":"3/w Begins in 2027-06-05"},"SJO":{"o":"3/w Begins in 2027-03-13","b":"3/w Begins in 2027-03-13"},"NAS":{"o":"3/w Begins in 2027-06-05","b":"3/w Begins in 2027-06-05"},"PUJ":{"o":"3/w Begins in 2027-06-05","b":"3/w Begins in 2027-06-05"},"SJU":{"o":"3/w Begins in 2026-11-07","b":"3/w Begins in 2026-11-07"}};
+let SCHED_CHECKED="Oct 15, 2026";
+function schedFmt(s){
+  if(!s)return {big:"–",sub:"No schedule data"};
+  const m=s.match(/^([\d–?]+)(?:\/(d|w))?(?: Begins in (\d{4})-(\d{2})-(\d{2}))?/);
+  const mon=["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
+  const start=m&&m[3]?`Restarts ${mon[+m[4]-1]} ${+m[5]}, ${m[3]}`:"";
+  if(!m||m[1]==="?")return {big:"Off season",sub:start||"Not on the schedule right now"};
+  const n=m[1], unit=m[2]==="w"?(n==="1"?"flight a week":"flights a week"):(n==="1"?"flight a day":"flights a day");
+  return {big:n,sub:unit+(start?" · "+start:"")};
+}
+
+const REG=[["tx","Texas & Southwest"],["west","West Coast"],["mtn","Mountain West"],["mw","Midwest"],["south","South"],["fl","Florida"],["ne","Northeast & Mid-Atlantic"],["intl","Mexico, Central America & Caribbean"]];
+const TAG={S:"Seas",N:"New",P:"Pass",F:"2027"};
+const $=s=>document.querySelector(s);
+let filter="all",q="",cur=null,tab="d";
+const closed=new Set();
+const ratings={};   // code -> number 0..5
+const notes={};
+const plans={};     // code -> {out, back, at}
+function distMi(c){const a=COORD.AUS,b=COORD[c];if(!b)return 0;const R=3958.8,r=Math.PI/180,dl=(b[1]-a[1])*r,dn=(b[0]-a[0])*r;const h=Math.sin(dl/2)**2+Math.cos(a[1]*r)*Math.cos(b[1]*r)*Math.sin(dn/2)**2;return 2*R*Math.asin(Math.sqrt(h))}
+function flight(c){const mi=distMi(c),east=COORD[c]&&COORD[c][0]>COORD.AUS[0];return {mi:Math.round(mi),out:0.6+mi/(east?520:470),back:0.6+mi/(east?470:520)}}
+const fmtH=h=>(Math.round(h*10)/10).toFixed(1)+" hours";
+function swUrl(from,to){let d="";try{const n=new Date();d=n.getFullYear()+"-"+String(n.getMonth()+1).padStart(2,"0")+"-"+String(n.getDate()).padStart(2,"0")}catch(e){}
+  return `https://www.southwest.com/air/booking/select.html?adultPassengersCount=1&departureDate=${d}&destinationAirportCode=${to}&originationAirportCode=${from}&returnDate=&tripType=oneway`}     // code -> {text, at}
+let db=null, mode="loading"; // "shared" | "local" | "loading"
+const esc=s=>String(s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+const tagsHtml=t=>t.length?`<span class="tags">${t.map(x=>`<i class="tag t-${x}">${TAG[x]}</i>`).join("")}</span>`:"";
+const STAR='<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2.8l2.8 5.9 6.4.8-4.7 4.4 1.2 6.4L12 17.2l-5.7 3.1 1.2-6.4-4.7-4.4 6.4-.8z"/></svg>';
+function starsHtml(v){
+  const pct=v==null?0:(v/5*100);
+  return `<span class="stars" role="img" aria-label="${v==null?"Not rated yet":v+" out of 5 stars"}"><span class="base">${STAR.repeat(5)}</span><span class="fill" style="width:${pct}%">${STAR.repeat(5)}</span></span>`;
+}
+const hasR=c=>typeof ratings[c]==="number";
+
+function match(x){
+  if(filter==="yr"&&(x.t.includes("S")||x.t.includes("F")))return false;
+  if(filter==="S"&&!x.t.includes("S"))return false;
+  if(filter==="nopp"&&x.t.includes("P"))return false;
+  if(filter==="rated"&&!hasR(x.c))return false;
+  if(filter==="unrated"&&hasR(x.c))return false;
+  if(q){const h=(x.c+" "+x.n+" "+x.s).toLowerCase();if(!h.includes(q))return false}
+  return true;
+}
+function renderTree(){
+  let html="",n=0;
+  for(const [k,label] of REG){
+    const list=D.filter(x=>x.r===k&&match(x)).sort((a,b)=>a.n.localeCompare(b.n));
+    if(!list.length)continue; n+=list.length;
+    const isClosed=closed.has(k)&&!q;
+    html+=`<section class="branch${isClosed?" closed":""}" data-r="${k}">
+      <button class="bhead" aria-expanded="${!isClosed}"><h2>${label}</h2><span class="bcount">${list.length}</span><span class="caret" aria-hidden="true">▾</span></button>
+      <div class="cities">${list.map(x=>`<button class="city" data-c="${x.c}" aria-current="${!!(cur&&cur.c===x.c)}"><span class="crow"><span class="code">${x.c}</span>${starsHtml(hasR(x.c)?ratings[x.c]:null)}${hasR(x.c)?`<span class="rnum">${ratings[x.c]}</span>`:""}</span><span class="nm">${esc(x.n)}${x.s?", "+esc(x.s):""}</span><span class="ft">(${fmtH(flight(x.c).out)})</span>${tagsHtml(x.t)}</button>`).join("")}</div>
+    </section>`;
+  }
+  $("#tree").innerHTML=html||`<p class="empty">No destinations match. Clear the search or pick another filter.</p>`;
+  $("#total").textContent=n;
+  updateMap();
+}
+function itemHtml(s){const [a,b]=s.split("|");return `<li><span><b>${esc(a)}</b>${b?`<span class="note">${esc(b)}</span>`:""}</span></li>`}
+
+function rateHtml(c){
+  const v=hasR(c)?ratings[c]:null;
+  let hits="";
+  for(let i=1;i<=10;i++){const val=i/2;hits+=`<button class="hit" style="left:${(i-1)*10}%" data-v="${val}" aria-label="Rate ${val} stars"></button>`}
+  return `<span class="rinput">${starsHtml(v)}${hits}</span>
+    <span class="rval${v==null?" un":""}">${v==null?"Not rated yet":v.toFixed(1)}</span>
+    <button class="mini" data-v="0">0</button>${v!=null?`<button class="mini" data-clear="1">Clear</button>`:""}`;
+}
+function updateRateUI(){ if(!cur)return; const r=$("#rate"); if(r) r.innerHTML=rateHtml(cur.c) }
+
+function fmtDate(t){try{return new Date(t).toLocaleDateString(undefined,{month:"short",day:"numeric",year:"numeric"})}catch(e){return ""}}
+function renderPanel(){
+  const p=$("#panel");
+  if(!cur){p.innerHTML=`<div class="grab"></div><p class="placeholder">Pick a destination from the tree.</p>`;return}
+  const x=cur,labels={d:"Do",e:"Eat",f:"Know",p:"Plan",n:"Notes"};
+  let body;
+  if(tab==="n"){
+    body=`<div class="notes"><label for="notes" class="hint" style="display:block;margin:0 0 6px">Your notes for ${esc(x.n)}: favorite finds, what to skip, plans for next time.</label>
+      <textarea id="notes" placeholder="e.g. Gate agents at ${x.c} were great about standby. Next time try…">${esc(notes[x.c]?.text||"")}</textarea>
+      <p class="nstat" id="nstat">${noteStatus()}</p></div>`;
+  } else if(tab==="p"){
+    const ft=flight(x.c), pl=plans[x.c]||{}, v=n=>n==null?"":n;
+    body=`<div class="plan">
+      <div class="pgrid">
+        <div class="pcell"><span class="plbl">AUS → ${x.c}</span><span class="pval">${fmtH(ft.out)}</span></div>
+        <div class="pcell"><span class="plbl">${x.c} → AUS</span><span class="pval">${fmtH(ft.back)}</span></div>
+      </div>
+      <p class="psub">${ft.mi.toLocaleString()} miles each way. Typical flight times, estimated from distance and prevailing winds. The schedule shows exact times.</p>
+      <h4 class="ph">Southwest nonstops</h4>
+      <div class="pgrid">${(()=>{const S=SCHED[x.c]||{},o=schedFmt(S.o),r=schedFmt(S.b);return `<div class="pcell"><span class="plbl">AUS → ${x.c}</span><span class="pval">${o.big}</span><span class="psub">${o.sub}</span></div><div class="pcell"><span class="plbl">${x.c} → AUS</span><span class="pval">${r.big}</span><span class="psub">${r.sub}</span></div>`})()}</div>
+      <p class="psub">From published schedules, updated ${SCHED_CHECKED}. Ranges mean the count changes by day of the week.</p>
+      <h4 class="ph">Your latest count</h4>
+      <p class="psub">Optional. Add what you see on Southwest when you plan a trip.</p>
+      <div class="pgrid">
+        <label class="pcell" for="pl-out"><span class="plbl">AUS → ${x.c}</span><input id="pl-out" class="pin" type="number" inputmode="numeric" min="0" max="40" step="1" value="${v(pl.out)}" placeholder="–"></label>
+        <label class="pcell" for="pl-back"><span class="plbl">${x.c} → AUS</span><input id="pl-back" class="pin" type="number" inputmode="numeric" min="0" max="40" step="1" value="${v(pl.back)}" placeholder="–"></label>
+      </div>
+      <p class="nstat" id="pstat">${planStatus()}</p>
+      <div class="plinks"><a class="plink" href="${swUrl("AUS",x.c)}" target="_blank" rel="noopener">AUS → ${x.c} flights today on southwest.com ↗</a>
+      <a class="plink" href="${swUrl(x.c,"AUS")}" target="_blank" rel="noopener">${x.c} → AUS flights today ↗</a></div>
+      <p class="psub">More flights a day means more chances if the first one fills up. Check the return too, so you don't get stuck.</p>
+    </div>`;
+  } else {
+    body=`<ol class="list ${tab==="f"?"facts":""}">${x[tab].map(itemHtml).join("")}</ol>
+    <p class="hint">${tab==="d"?"Top 10 things to do or see":tab==="e"?"Top 10 places to eat":"10 facts and things to know"}</p>`;
+  }
+  p.innerHTML=`<div class="grab"></div>
+    <div class="board"><span class="big">${x.c}</span><span class="route">AUS → ${x.c} · nonstop</span><button class="closebtn" id="close">Close</button></div>
+    <div class="rate" id="rate">${rateHtml(x.c)}</div>
+    <h3>${esc(x.n)}</h3><p class="where">${esc(x.s)} ${tagsHtml(x.t)}</p>
+    <div class="tabs" role="tablist">${["d","e","f","p","n"].map(k=>`<button class="tab" role="tab" data-t="${k}" aria-selected="${tab===k}">${labels[k]}${k==="n"&&notes[x.c]?.text?" •":""}</button>`).join("")}</div>
+    ${body}`;
+}
+
+/* ---- storage: saved on this phone first, synced through Supabase when signed in and online ---- */
+const CFG=window.ATLAS_CONFIG||{};
+const LSKEY="aus-atlas-store-v1";
+let store={ratings:{},notes:{},plan:{},pending:[],lastSync:0};
+let sb=null, session=null, syncing=false, syncTimer=null;
+try{const s=JSON.parse(localStorage.getItem(LSKEY)||"null");if(s)store=Object.assign(store,s)}catch(e){}
+function saveLocal(){try{localStorage.setItem(LSKEY,JSON.stringify(store))}catch(e){}}
+function applyStore(){
+  for(const k of Object.keys(ratings))delete ratings[k];
+  for(const [c,r] of Object.entries(store.ratings)) if(typeof r.v==="number") ratings[c]=r.v;
+  const ta=$("#notes"), editingNote=ta&&document.activeElement===ta;
+  for(const k of Object.keys(notes)) if(!(editingNote&&cur&&k===cur.c)) delete notes[k];
+  for(const [c,n] of Object.entries(store.notes)) if(n.text&&!(editingNote&&cur&&c===cur.c)) notes[c]={text:n.text,at:n.at};
+  const ae=document.activeElement, editingPlan=ae&&(ae.id==="pl-out"||ae.id==="pl-back");
+  for(const k of Object.keys(plans)) if(!(editingPlan&&cur&&k===cur.c)) delete plans[k];
+  for(const [c,p] of Object.entries(store.plan)) if((p.out!=null||p.back!=null)&&!(editingPlan&&cur&&c===cur.c)) plans[c]={out:p.out,back:p.back,at:p.at};
+}
+function refreshUI(){
+  renderTree(); updateRateUI();
+  if(cur&&tab==="n"){const ta=$("#notes");if(ta&&document.activeElement!==ta)ta.value=notes[cur.c]?.text||"";const s=$("#nstat");if(s)s.textContent=noteStatus()}
+  if(cur&&tab==="p"){const ae=document.activeElement;if(!(ae&&(ae.id==="pl-out"||ae.id==="pl-back"))){const o=$("#pl-out"),r=$("#pl-back"),p=plans[cur.c]||{};if(o)o.value=p.out??"";if(r)r.value=p.back??""}const s=$("#pstat");if(s)s.textContent=planStatus()}
+  const t=document.querySelector('.tab[data-t="n"]'); if(t&&cur) t.textContent="Notes"+(notes[cur.c]?.text?" •":"");
+  syncBadge();
+}
+function record(kind,code,body){
+  body.at=Date.now(); store[kind][code]=body;
+  store.pending=store.pending.filter(p=>!(p.kind===kind&&p.code===code)); store.pending.push({kind,code});
+  saveLocal(); syncSoon(); syncBadge();
+}
+function setRating(c,v){
+  if(v==null)delete ratings[c]; else ratings[c]=v;
+  record("ratings",c,{v:v==null?null:v});
+  renderTree(); updateRateUI();
+}
+let noteTimer=null;
+function queueNote(c,text){
+  notes[c]={text,at:Date.now()};
+  const s=$("#nstat"); if(s){s.classList.remove("err");s.textContent="Saving…"}
+  clearTimeout(noteTimer); noteTimer=setTimeout(()=>saveNote(c,text),600);
+}
+function saveNote(c,text){
+  noteTimer=null; if(!text)delete notes[c];
+  record("notes",c,{text:text||""});
+  const s=$("#nstat"); if(s&&cur&&cur.c===c)s.textContent=noteStatus();
+  const t=document.querySelector('.tab[data-t="n"]'); if(t&&cur&&cur.c===c) t.textContent="Notes"+(text?" •":"");
+}
+function planStatus(){const p=cur&&plans[cur.c];
+  return p&&(p.out!=null||p.back!=null)?`Your count, updated ${fmtDate(p.at)}.`:"Optional. Add what you see when you plan a trip."}
+let planTimer=null;
+function queuePlan(c){
+  const g=id=>{const el=$(id);if(!el||el.value==="")return null;const n=Math.max(0,Math.min(40,Math.round(+el.value)));return isFinite(n)?n:null};
+  const out=g("#pl-out"),back=g("#pl-back");
+  if(out==null&&back==null)delete plans[c]; else plans[c]={out,back,at:Date.now()};
+  clearTimeout(planTimer);
+  planTimer=setTimeout(()=>{record("plan",c,{out,back});const s=$("#pstat");if(s&&cur&&cur.c===c)s.textContent=planStatus()},600);
+}
+function noteStatus(){
+  const n=cur&&notes[cur.c];
+  const where=session?"Saved on this phone and synced":"Saved on this phone";
+  return n&&n.text?`${where} · last edited ${fmtDate(n.at)}`:where;
+}
+
+/* Supabase sync: last edit wins, per airport and per kind */
+const TABLE={ratings:"ratings",notes:"notes",plan:"plan"};
+function rowOf(kind,code,b){return kind==="ratings"?{code,v:b.v,at:b.at}:kind==="notes"?{code,text:b.text,at:b.at}:{code,out:b.out,back:b.back,at:b.at}}
+function bodyOf(kind,r){return kind==="ratings"?{v:r.v==null?null:+r.v,at:+r.at}:kind==="notes"?{text:r.text||"",at:+r.at}:{out:r.out,back:r.back,at:+r.at}}
+function syncSoon(){clearTimeout(syncTimer);syncTimer=setTimeout(sync,1200)}
+async function sync(){
+  if(!sb||!session||syncing||!navigator.onLine){syncBadge();return}
+  syncing=true; syncBadge();
+  try{
+    const remote={};
+    for(const k of Object.keys(TABLE)){
+      const {data,error}=await sb.from(TABLE[k]).select("*"); if(error)throw error;
+      remote[k]={}; for(const r of data) remote[k][r.code]=r;
+    }
+    // push local edits that are newer than the server copy
+    const keep=[];
+    for(const p of store.pending){
+      const local=store[p.kind][p.code], rem=remote[p.kind][p.code];
+      if(!local)continue;
+      if(rem&&+rem.at>local.at){continue}
+      const {error}=await sb.from(TABLE[p.kind]).upsert(rowOf(p.kind,p.code,local));
+      if(error){keep.push(p)} else remote[p.kind][p.code]=rowOf(p.kind,p.code,local);
+    }
+    store.pending=keep;
+    // pull anything newer from the server
+    for(const k of Object.keys(TABLE)) for(const [c,r] of Object.entries(remote[k])){
+      const local=store[k][c]; if(!local||+r.at>local.at) store[k][c]=bodyOf(k,r);
+    }
+    store.lastSync=Date.now(); saveLocal(); applyStore(); refreshUI();
+  }catch(e){ console.warn("sync failed",e) }
+  finally{ syncing=false; syncBadge() }
+}
+function ago(t){if(!t)return "never";const m=Math.round((Date.now()-t)/60000);return m<1?"just now":m<60?m+" min ago":m<1440?Math.round(m/60)+" hr ago":fmtDate(t)}
+function syncBadge(){
+  const b=$("#syncbtn"); if(!b)return;
+  let txt,st;
+  if(!CFG.supabaseUrl){txt="On this phone";st="off"}
+  else if(!session){txt="Sign in to sync";st="off"}
+  else if(!navigator.onLine){txt=store.pending.length?`Offline · ${store.pending.length} to sync`:"Offline";st="warn"}
+  else if(syncing){txt="Syncing…";st="on"}
+  else if(store.pending.length){txt=`${store.pending.length} waiting to sync`;st="warn"}
+  else {txt="Synced "+ago(store.lastSync);st="on"}
+  b.textContent=txt; b.dataset.state=st;
+}
+async function initStore(){
+  mode="local"; applyStore(); refreshUI();
+  if(!CFG.supabaseUrl||!CFG.supabaseKey)return;
+  try{
+    if(!window.supabase)await loadScript("https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js");
+    sb=window.supabase.createClient(CFG.supabaseUrl,CFG.supabaseKey,{auth:{persistSession:true,autoRefreshToken:true,storageKey:"aus-atlas-auth"}});
+    const {data}=await sb.auth.getSession(); session=data.session||null;
+    sb.auth.onAuthStateChange((_e,s)=>{session=s||null;syncBadge();if(session)sync()});
+    syncBadge(); if(session)sync();
+  }catch(e){ console.warn("sync unavailable",e); syncBadge() }
+  addEventListener("online",sync); addEventListener("offline",syncBadge);
+  document.addEventListener("visibilitychange",()=>{if(document.visibilityState==="visible")sync()});
+  setInterval(()=>{if(document.visibilityState==="visible")sync()},90000);
+}
+
+/* sign-in sheet (email + 6-digit code, works inside the home-screen app) */
+function openSync(){
+  const d=$("#syncsheet"); d.hidden=false; $("#syncscrim").hidden=false;
+  renderSync();
+}
+function closeSync(){$("#syncsheet").hidden=true;$("#syncscrim").hidden=true}
+function renderSync(msg){
+  const d=$("#syncsheet");
+  if(!CFG.supabaseUrl){d.innerHTML=`<h3>Sync isn't set up yet</h3><p class="psub">Ratings and notes are saved on this phone. Once the sync service is connected, you can sign in here to share them between phones.</p><button class="mini" id="syncclose">Close</button>`;return}
+  if(session){d.innerHTML=`<h3>Sync is on</h3><p class="psub">Signed in as ${esc(session.user?.email||"")}. Last synced ${ago(store.lastSync)}.${store.pending.length?` ${store.pending.length} change(s) waiting for a connection.`:""}</p>
+    <div class="srow"><button class="dice" id="syncnow">Sync now</button><button class="mini" id="signout">Sign out</button><button class="mini" id="syncclose">Close</button></div>`;return}
+  d.innerHTML=`<h3>Sync between your phones</h3><p class="psub">Enter your email. We'll send a 6-digit code.</p>
+    <label class="plbl" for="sy-email">Email</label><input id="sy-email" class="search" type="email" autocomplete="email" inputmode="email">
+    <div class="srow"><button class="dice" id="sendcode">Send code</button><button class="mini" id="syncclose">Close</button></div>
+    <label class="plbl" for="sy-code">Code from the email</label><input id="sy-code" class="search" inputmode="numeric" autocomplete="one-time-code" maxlength="10">
+    <div class="srow"><button class="dice" id="verify">Sign in</button></div>
+    <p class="nstat" id="symsg">${msg?esc(msg):""}</p>`;
+}
+document.addEventListener("click",async e=>{
+  const id=e.target.id;
+  if(id==="syncbtn"){openSync();return}
+  if(id==="syncclose"||id==="syncscrim"){closeSync();return}
+  if(id==="syncnow"){sync().then(()=>renderSync());return}
+  if(id==="signout"){await sb.auth.signOut();session=null;renderSync();syncBadge();return}
+  if(id==="sendcode"){const em=$("#sy-email").value.trim();if(!em)return;const m=$("#symsg");m.textContent="Sending…";
+    const {error}=await sb.auth.signInWithOtp({email:em,options:{shouldCreateUser:true}});
+    m.textContent=error?"Couldn't send the code. Check the email address and your connection.":"Code sent. Check your email.";return}
+  if(id==="verify"){const em=$("#sy-email").value.trim(),code=$("#sy-code").value.trim();const m=$("#symsg");m.textContent="Checking…";
+    const {data,error}=await sb.auth.verifyOtp({email:em,token:code,type:"email"});
+    if(error){m.textContent="That code didn't work. Codes expire after a few minutes, so send a new one.";return}
+    session=data.session;
+    store.pending=[...new Set([...store.pending.map(p=>p.kind+"|"+p.code),...["ratings","notes","plan"].flatMap(k=>Object.keys(store[k]).map(c=>k+"|"+c))])].map(s=>{const [kind,code]=s.split("|");return {kind,code}});
+    saveLocal(); await sync(); renderSync(); return}
+});
+
+/* refresh schedule counts when online; keep the last copy for offline */
+const SKEY="aus-atlas-sched-v1";
+try{const s=JSON.parse(localStorage.getItem(SKEY)||"null");if(s&&s.routes){SCHED=s.routes;SCHED_CHECKED=s.checkedLabel||SCHED_CHECKED}}catch(e){}
+async function refreshSchedule(){
+  if(!navigator.onLine)return;
+  try{const r=await fetch("data/schedule.json",{cache:"no-store"});if(!r.ok)return;const j=await r.json();if(!j.routes)return;
+    SCHED=j.routes; SCHED_CHECKED=j.checkedLabel||SCHED_CHECKED;
+    try{localStorage.setItem(SKEY,JSON.stringify(j))}catch(e){}
+    if(cur&&tab==="p")renderPanel();
+  }catch(e){}
+}
+
+/* ---- interaction ---- */
+const mobile=()=>matchMedia("(max-width:959px)").matches;
+function openCity(c){
+  const next=D.find(x=>x.c===c); if(!next)return;
+  if(noteTimer&&cur){clearTimeout(noteTimer);noteTimer=null;saveNote(cur.c,notes[cur.c]?.text||"")}
+  cur=next;
+  try{history.replaceState(null,"","#"+c)}catch(e){}
+  renderPanel(); document.querySelectorAll(".city").forEach(b=>b.setAttribute("aria-current",b.dataset.c===c));
+  updateMap();
+  if(mobile()){$("#panel").classList.remove("away");$("#scrim").hidden=false;$("#panel").scrollTop=0}
+}
+function closePanel(){ if(mobile()){$("#panel").classList.add("away");$("#scrim").hidden=true} }
+$("#tree").addEventListener("click",e=>{
+  const c=e.target.closest(".city"); if(c){openCity(c.dataset.c);return}
+  const h=e.target.closest(".bhead"); if(h){const k=h.parentElement.dataset.r; closed.has(k)?closed.delete(k):closed.add(k); renderTree()}
+});
+$("#panel").addEventListener("click",e=>{
+  const t=e.target.closest(".tab"); if(t){tab=t.dataset.t;renderPanel();return}
+  const h=e.target.closest("[data-v]"); if(h&&cur){setRating(cur.c,parseFloat(h.dataset.v));return}
+  if(e.target.closest("[data-clear]")&&cur){setRating(cur.c,null);return}
+  if(e.target.id==="close")closePanel();
+});
+$("#panel").addEventListener("input",e=>{ if(e.target.id==="notes"&&cur) queueNote(cur.c,e.target.value); if((e.target.id==="pl-out"||e.target.id==="pl-back")&&cur) queuePlan(cur.c) });
+$("#scrim").addEventListener("click",closePanel);
+document.addEventListener("keydown",e=>{if(e.key==="Escape")closePanel()});
+$("#q").addEventListener("input",e=>{q=e.target.value.trim().toLowerCase();renderTree()});
+document.querySelectorAll(".chipbtn").forEach(b=>b.addEventListener("click",()=>{
+  filter=b.dataset.f; document.querySelectorAll(".chipbtn").forEach(x=>x.setAttribute("aria-pressed",x===b)); renderTree();
+}));
+$("#dice").addEventListener("click",()=>{const pool=D.filter(match);if(pool.length){tab="d";openCity(pool[Math.floor(Math.random()*pool.length)].c)}});
+
+
+/* ---- map view ---- */
+const COORD={AUS:[-97.67,30.19],ABQ:[-106.61,35.04],AMA:[-101.71,35.22],DAL:[-96.85,32.85],ELP:[-106.38,31.81],HRL:[-97.65,26.23],HOU:[-95.28,29.65],LBB:[-101.82,33.66],MAF:[-102.20,31.94],OKC:[-97.60,35.39],TUL:[-95.89,36.20],PHX:[-112.01,33.43],LAS:[-115.15,36.08],
+BUR:[-118.36,34.20],LGB:[-118.15,33.82],LAX:[-118.41,33.94],ONT:[-117.60,34.06],SNA:[-117.87,33.68],SAN:[-117.19,32.73],OAK:[-122.22,37.72],SFO:[-122.38,37.62],SJC:[-121.93,37.36],SMF:[-121.59,38.70],SEA:[-122.31,47.45],PDX:[-122.60,45.59],PSP:[-116.51,33.83],RNO:[-119.77,39.50],STS:[-122.81,38.51],
+DEN:[-104.67,39.86],SLC:[-111.98,40.79],BZN:[-111.15,45.78],HDN:[-107.22,40.48],MTJ:[-107.89,38.51],
+MDW:[-87.75,41.79],CVG:[-84.67,39.05],CMH:[-82.89,40.00],IND:[-86.29,39.72],MCI:[-94.71,39.30],MKE:[-87.90,42.95],MSP:[-93.22,44.88],STL:[-90.37,38.75],OMA:[-95.89,41.30],DTW:[-83.35,42.21],
+ATL:[-84.43,33.64],MEM:[-89.98,35.04],BNA:[-86.68,36.12],MSY:[-90.26,29.99],RDU:[-78.79,35.88],CHS:[-80.04,32.90],TYS:[-83.99,35.81],SAV:[-81.20,32.13],
+FLL:[-80.15,26.07],JAX:[-81.69,30.49],MIA:[-80.29,25.80],MCO:[-81.31,28.43],TPA:[-82.53,27.98],RSW:[-81.76,26.54],ECP:[-85.80,30.36],PNS:[-87.19,30.47],VPS:[-86.53,30.48],SRQ:[-82.55,27.40],
+BWI:[-76.67,39.18],BOS:[-71.01,42.36],PIT:[-80.23,40.49],DCA:[-77.04,38.85],
+CUN:[-86.87,21.04],SJD:[-109.72,23.15],PVR:[-105.25,20.68],LIR:[-85.54,10.59],SJO:[-84.21,9.99],NAS:[-77.47,25.04],PUJ:[-68.36,18.57],SJU:[-66.00,18.44]};
+const OCEANS=[["Pacific Ocean",-121.5,24.5],["Atlantic Ocean",-66,33],["Gulf of Mexico",-90.6,25.6,"(Gulf of America)"],["Caribbean Sea",-76.5,15.2]];
+const COUNTRIES=[["UNITED STATES",-100.5,41.9,1],["MEXICO",-102.6,24.2,1],["CUBA",-79.4,21.9,1.4],["BAHAMAS",-75.4,23.5,1.7],["DOMINICAN REP.",-70.4,19.25,2],["HAITI",-72.7,18.75,2.6],["JAMAICA",-77.3,18.05,2.4],["PUERTO RICO",-66.4,18.05,3.2],["GUATEMALA",-90.3,15.7,1.9],["BELIZE",-88.6,17.1,2.6],["HONDURAS",-86.7,14.85,1.9],["EL SALVADOR",-88.9,13.6,2.8],["NICARAGUA",-85.2,12.7,1.7],["COSTA RICA",-83.9,9.35,2],["PANAMA",-80.4,8.5,2.2]];
+const SRC={d3:"https://cdnjs.cloudflare.com/ajax/libs/d3/7.9.0/d3.min.js",topo:"https://cdnjs.cloudflare.com/ajax/libs/topojson/3.0.2/topojson.min.js",usa:"https://cdnjs.cloudflare.com/ajax/libs/datamaps/0.5.9/datamaps.usa.min.js",world:"https://cdnjs.cloudflare.com/ajax/libs/datamaps/0.5.9/datamaps.world.hires.min.js"};
+let view="list", M=null, mapLoading=null, topo=null;
+const reduceMotion=matchMedia("(prefers-reduced-motion: reduce)").matches;
+function loadScript(src){return new Promise((res,rej)=>{const s=document.createElement("script");s.src=src;s.onload=res;s.onerror=()=>rej(new Error(src));document.head.appendChild(s)})}
+function ensureMap(){
+  if(M)return Promise.resolve();
+  if(mapLoading)return mapLoading;
+  $("#mapmsg").textContent="Loading map…"; $("#mapmsg").hidden=false;
+  mapLoading=(async()=>{
+    if(!window.d3)await loadScript(SRC.d3);
+    if(!window.topojson)await loadScript(SRC.topo);
+    if(!topo){
+      await loadScript(SRC.usa); const usa=window.Datamap.prototype.usaTopo;
+      await loadScript(SRC.world); const world=window.Datamap.prototype.worldTopo;
+      topo={usa,world};
+    }
+    buildMap(); $("#mapmsg").hidden=true;
+  })().catch(()=>{ mapLoading=null; $("#mapmsg").textContent="The map couldn't load. Check your connection, then switch to Map again."; });
+  return mapLoading;
+}
+function buildMap(){
+  const wrap=$("#map .mapwrap"), W=Math.max(320,wrap.clientWidth), H=Math.max(320,wrap.clientHeight);
+  const svg=d3.select("#mapsvg").attr("viewBox",`0 0 ${W} ${H}`); svg.selectAll("*").remove(); svg.property("__zoom",d3.zoomIdentity);
+  const pad=W<520?18:34;
+  const proj=d3.geoMercator().fitExtent([[pad,pad+10],[W-pad,H-pad]],{type:"MultiPoint",coordinates:Object.values(COORD)});
+  const path=d3.geoPath(proj);
+  const {usa,world}=topo, wo=world.objects.world, uo=usa.objects.usa;
+  const layer=svg.append("g");
+  layer.append("path").attr("class","m-water").attr("d",path({type:"Sphere"}));
+  layer.append("path").attr("class","m-grat").attr("d",path(d3.geoGraticule().step([10,10])()));
+  layer.append("g").selectAll("path").data(topojson.feature(world,wo).features).join("path").attr("class","m-land").attr("d",path);
+  layer.append("path").attr("class","m-state").attr("d",path(topojson.mesh(usa,uo,(a,b)=>a!==b)));
+  layer.append("path").attr("class","m-border").attr("d",path(topojson.mesh(world,wo,(a,b)=>a!==b)));
+  layer.append("path").attr("class","m-coast").attr("d",path(topojson.mesh(world,wo,(a,b)=>a===b)));
+  const routes=layer.append("g");
+  const lbl=layer.append("g");
+  const stateLbl=lbl.append("g").attr("class","m-stlbls");
+  topojson.feature(usa,uo).features.forEach(f=>{
+    if(f.id==="AK"||f.id==="HI"||f.id==="DC")return;
+    const [x,y]=path.centroid(f); if(!isFinite(x))return;
+    stateLbl.append("text").attr("class","m-stlbl").attr("data-x",x).attr("data-y",y).text(f.id);
+  });
+  const cLbl=lbl.append("g");
+  COUNTRIES.forEach(([n,lon,lat,mk])=>{const [x,y]=proj([lon,lat]);cLbl.append("text").attr("class","m-clbl").attr("data-x",x).attr("data-y",y).attr("data-k",mk).text(n)});
+  const oLbl=lbl.append("g");
+  OCEANS.forEach(([n,lon,lat,sub])=>{const [x,y]=proj([lon,lat]);const t=oLbl.append("text").attr("class","m-olbl").attr("data-x",x).attr("data-y",y);t.append("tspan").attr("x",0).text(n);if(sub)t.append("tspan").attr("x",0).attr("dy","1.25em").attr("class","m-olsub").text(sub)});
+  const hub=proj(COORD.AUS);
+  const P={};
+  for(const x of D){ if(!COORD[x.c])continue; const [px,py]=proj(COORD[x.c]); P[x.c]={x:px,y:py,city:x};
+    routes.append("path").attr("class","m-route").attr("data-c",x.c).attr("d",path({type:"LineString",coordinates:[COORD.AUS,COORD[x.c]]})); }
+  // label spacing: nearest neighbour distance at zoom 1
+  const codes=Object.keys(P);
+  codes.forEach(c=>{let m=1e9;codes.forEach(o=>{if(o!==c){const d=Math.hypot(P[c].x-P[o].x,P[c].y-P[o].y);if(d<m)m=d}});m=Math.min(m,Math.hypot(P[c].x-hub[0],P[c].y-hub[1]));P[c].nn=m});
+  const pts=layer.append("g");
+  codes.forEach(c=>{
+    const g=pts.append("g").attr("class","m-pt").attr("data-c",c).attr("tabindex",0).attr("role","button").attr("aria-label",`${c}, ${P[c].city.n}`);
+    g.append("circle").attr("class","m-hit").attr("r",13);
+    g.append("circle").attr("class","m-ring").attr("r",9);
+    g.append("circle").attr("class","m-dot").attr("r",5);
+    const left=P[c].x>W*0.82;
+    g.append("text").attr("class","m-code").attr("x",left?-9:9).attr("y",4).attr("text-anchor",left?"end":"start").text(c);
+    P[c].g=g;
+  });
+  const hg=pts.append("g").attr("class","m-hub");
+  hg.append("rect").attr("x",-7).attr("y",-7).attr("width",14).attr("height",14).attr("rx",2);
+  hg.append("text").attr("x",10).attr("y",-8).text("AUS");
+  const zoom=d3.zoom().scaleExtent([1,14]).translateExtent([[-W*0.1,-H*0.1],[W*1.1,H*1.1]]).on("zoom",e=>{layer.attr("transform",e.transform);M.k=e.transform.k;place()});
+  svg.call(zoom).on("dblclick.zoom",null);
+  pts.on("click",e=>{const g=e.target.closest(".m-pt");if(g){tip(null);openCity(g.dataset.c)}});
+  pts.on("keydown",e=>{if((e.key==="Enter"||e.key===" ")&&e.target.closest(".m-pt")){e.preventDefault();openCity(e.target.closest(".m-pt").dataset.c)}});
+  pts.on("pointerover",e=>{const g=e.target.closest(".m-pt");if(g)tip(g.dataset.c)}).on("pointerout",e=>{if(e.target.closest(".m-pt"))tip(null)});
+  M={svg,layer,zoom,P,hub,k:1,W,H,proj};
+  place(); updateMap();
+}
+function place(){
+  if(!M)return; const k=M.k, s=1/k;
+  M.layer.selectAll(".m-pt").each(function(){const p=M.P[this.dataset.c];this.setAttribute("transform",`translate(${p.x},${p.y}) scale(${s})`);
+    const show=p.nn*k>=30||k>=5||(cur&&cur.c===this.dataset.c); this.classList.toggle("nolbl",!show)});
+  M.layer.select(".m-hub").attr("transform",`translate(${M.hub[0]},${M.hub[1]}) scale(${s})`);
+  M.layer.selectAll(".m-stlbl,.m-clbl,.m-olbl").each(function(){this.setAttribute("transform",`translate(${this.dataset.x},${this.dataset.y}) scale(${s})`)});
+  M.layer.selectAll(".m-stlbl").classed("off",k<1.6);
+  M.layer.selectAll(".m-clbl").each(function(){this.classList.toggle("off",k<+this.dataset.k)});
+}
+function updateMap(){
+  if(!M)return;
+  for(const c in M.P){const p=M.P[c],on=match(p.city),sel=!!(cur&&cur.c===c);
+    p.g.classed("dim",!on).classed("rated",hasR(c)).classed("sel",sel);
+    p.g.attr("aria-label",`${c}, ${p.city.n}${hasR(c)?", rated "+ratings[c]:""}`);}
+  M.layer.selectAll(".m-route").each(function(){const c=this.dataset.c;this.classList.toggle("sel",!!(cur&&cur.c===c));this.classList.toggle("dim",!match(M.P[c].city))});
+  place();
+}
+function tip(c){
+  const t=$("#maptip"); if(!c||!M){t.hidden=true;return}
+  const p=M.P[c], tr=d3.zoomTransform(M.svg.node()), r=M.svg.node().getBoundingClientRect(), wr=$("#map .mapwrap").getBoundingClientRect();
+  const sx=r.width/M.W, x=tr.applyX(p.x)*sx+(r.left-wr.left), y=tr.applyY(p.y)*sx+(r.top-wr.top);
+  t.innerHTML=`<b>${c}</b> ${esc(p.city.n)} · ${fmtH(flight(c).out)}<span class="tipst">${starsHtml(hasR(c)?ratings[c]:null)}${hasR(c)?" "+ratings[c]:" Not yet"}</span>`;
+  t.hidden=false; t.style.left=Math.min(Math.max(8,x+12),wr.width-t.offsetWidth-8)+"px"; t.style.top=Math.max(8,y-t.offsetHeight-10)+"px";
+}
+function zoomBy(f){ if(M) M.svg.transition().duration(reduceMotion?0:250).call(M.zoom.scaleBy,f) }
+function zoomReset(){ if(M) M.svg.transition().duration(reduceMotion?0:300).call(M.zoom.transform,d3.zoomIdentity) }
+function setView(v){
+  view=v; try{localStorage.setItem("aus-view",v)}catch(e){}
+  document.querySelectorAll(".vbtn").forEach(b=>b.setAttribute("aria-pressed",b.dataset.view===v));
+  $("#tree").hidden=v!=="list"; $("#map").hidden=v!=="map"; $("#legendList").hidden=v!=="list";
+  if(v==="map")ensureMap().then(()=>updateMap());
+}
+document.querySelectorAll(".vbtn").forEach(b=>b.addEventListener("click",()=>setView(b.dataset.view)));
+$("#zin").addEventListener("click",()=>zoomBy(1.6));
+$("#zout").addEventListener("click",()=>zoomBy(1/1.6));
+$("#zreset").addEventListener("click",zoomReset);
+let rsz=null; addEventListener("resize",()=>{clearTimeout(rsz);rsz=setTimeout(()=>{if(M&&view==="map"){const k=M.k;buildMap()}},250)});
+
+renderTree();
+const h=(location.hash||"").slice(1).toUpperCase();
+const start=D.find(x=>x.c===h)||D.find(x=>x.c==="MSY");
+cur=start; renderPanel();
+if(mobile()&&!D.find(x=>x.c===h)) $("#panel").classList.add("away");
+else document.querySelectorAll(".city").forEach(b=>b.setAttribute("aria-current",b.dataset.c===cur.c));
+initStore(); refreshSchedule(); addEventListener("online",refreshSchedule);
+let savedView="list"; try{savedView=localStorage.getItem("aus-view")||"list"}catch(e){}
+setView(savedView==="map"?"map":"list");
+
+if("serviceWorker" in navigator){addEventListener("load",()=>navigator.serviceWorker.register("sw.js").catch(()=>{}))}
+</script>
+</body>
+</html>

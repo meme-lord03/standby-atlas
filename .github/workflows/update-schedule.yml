@@ -1,0 +1,28 @@
+name: Refresh flight counts
+
+on:
+  schedule:
+    - cron: "47 10 * * *"   # every day around 5:47 am Austin time
+  workflow_dispatch: {}      # run it by hand from the Actions tab
+
+permissions:
+  contents: write
+
+jobs:
+  refresh:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - name: Read Southwest nonstop counts
+        run: node scripts/update-schedule.mjs
+      - name: Save if anything changed
+        run: |
+          git config user.name "schedule-bot"
+          git config user.email "actions@users.noreply.github.com"
+          git add data/schedule.json
+          git diff --cached --quiet || git commit -m "Refresh flight counts"
+          git push
