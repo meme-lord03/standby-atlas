@@ -931,6 +931,8 @@ function exportBackup(){
   flushPending();
   const data={app:"aus-standby-atlas",version:1,exported:new Date().toISOString(),ratings:store.ratings,notes:store.notes,plan:store.plan,marks:store.marks};
   const name=`standby-atlas-backup-${isoDay()}.json`;
+  const nativeShare=window.webkit&&window.webkit.messageHandlers&&window.webkit.messageHandlers.atlasShare;
+  if(nativeShare){nativeShare.postMessage({name,text:JSON.stringify(data,null,1)});return}
   const file=new File([JSON.stringify(data,null,1)],name,{type:"application/json"});
   if(navigator.canShare&&navigator.canShare({files:[file]})){navigator.share({files:[file],title:"Standby Atlas backup"}).catch(()=>{});return}
   const a=document.createElement("a");a.href=URL.createObjectURL(file);a.download=name;document.body.appendChild(a);a.click();setTimeout(()=>{URL.revokeObjectURL(a.href);a.remove()},1000);
