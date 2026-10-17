@@ -136,6 +136,21 @@ ol.list .note{display:block;color:var(--muted);font-size:14px}
 .notes textarea:focus-visible{outline:2px solid var(--accent);outline-offset:1px}
 .nstat{font-size:13px;color:var(--muted);margin-top:6px;min-height:1.2em}
 .nstat.err{color:var(--rose)}
+.t-X{background:var(--bg);color:var(--muted);border:1px solid var(--line)}
+.tdate{display:inline-flex;align-items:center;gap:6px;font-size:13px;color:var(--muted)}
+.tdate input{font:inherit;font-size:14px;padding:8px 10px;border:1px solid var(--line);border-radius:6px;background:var(--surface);color:var(--ink)}
+.tdate input:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.markrow{display:inline-flex;gap:6px;flex-wrap:wrap}
+.mark{font:inherit;font-size:13px;font-weight:700;padding:5px 11px;border-radius:999px;border:1px solid var(--line);background:var(--surface);color:var(--muted);cursor:pointer}
+.mark[aria-pressed="true"]{background:var(--leaf-soft);color:var(--leaf);border-color:var(--leaf)}
+.mark.fav[aria-pressed="true"]{background:var(--rose-soft);color:var(--rose);border-color:var(--rose)}
+.mark:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.favdot{color:var(--rose);font-size:13px;line-height:1}
+.visdot{color:var(--leaf);font-size:13px;font-weight:700;line-height:1}
+.pwarn{margin:0;padding:10px 12px;border-radius:8px;background:var(--accent-soft);color:var(--accent-ink);font-size:14px}
+.toast{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(20px + env(safe-area-inset-bottom,0px));z-index:70;max-width:min(520px,calc(100% - 32px));background:var(--ink);color:var(--bg);padding:10px 14px;border-radius:10px;font-size:14px;box-shadow:0 4px 16px rgba(0,0,0,.25)}
+.toast.err{background:var(--rose);color:#fff}
+
 .city .ft{font-family:var(--mono);font-size:11px;color:var(--sky)}
 .plan{display:grid;gap:10px}
 .pgrid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
@@ -226,11 +241,13 @@ ol.list .note{display:block;color:var(--muted);font-size:14px}
 
   <div class="controls">
     <input id="q" class="search" type="search" placeholder="Search a city or code (e.g. MSY)" aria-label="Search destinations">
+    <label class="tdate" for="tdate"><span>Travel date</span><input id="tdate" type="date"></label>
     <div class="filters" role="group" aria-label="Filter">
       <button class="chipbtn" data-f="all" aria-pressed="true">All</button>
-      <button class="chipbtn" data-f="yr" aria-pressed="false">Year-round</button>
+      <button class="chipbtn" data-f="flying" aria-pressed="false">Flying that day</button>
       <button class="chipbtn" data-f="S" aria-pressed="false">Seasonal</button>
       <button class="chipbtn" data-f="nopp" aria-pressed="false">No passport</button>
+      <button class="chipbtn" data-f="fav" aria-pressed="false">♥ Favorites</button>
       <button class="chipbtn" data-f="rated" aria-pressed="false">Been there</button>
       <button class="chipbtn" data-f="unrated" aria-pressed="false">Not yet</button>
     </div>
@@ -244,7 +261,8 @@ ol.list .note{display:block;color:var(--muted);font-size:14px}
     <span><i class="tag t-S">Seas</i> seasonal</span>
     <span><i class="tag t-N">New</i> newer route</span>
     <span><i class="tag t-P">Pass</i> passport</span>
-    <span><i class="tag t-F">2027</i> starts later</span>
+    <span><i class="tag t-F">Starts …</i> not flying on your travel date yet</span>
+    <span><i class="tag t-X">No schedule</i> no current schedule found</span>
   </div>
 
   <div class="layout">
@@ -263,6 +281,7 @@ ol.list .note{display:block;color:var(--muted);font-size:14px}
     </div>
 
     <div class="scrim" id="scrim" hidden></div>
+    <div class="toast" id="toast" role="status" aria-live="polite" hidden></div>
     <aside class="panel" id="panel" aria-live="polite"></aside>
   </div>
 
@@ -443,7 +462,7 @@ f:["The Gateway Arch is 630 ft tall","St. Louis hosted the 1904 World's Fair and
 d:["Henry Doorly Zoo","Old Market","Joslyn Art Museum","Durham Museum|In Union Station","Lauritzen Gardens","Bob Kerrey Pedestrian Bridge|Stand in two states","College World Series (June)","Strategic Air Command & Aerospace Museum","Gene Leahy Mall","Boys Town"],
 e:["Gorat's|Warren Buffett's steakhouse","Block 16","Dante|Wood-fired pizza","Upstream Brewing","Kitchen Table","Stella's Bar & Grill|Burgers","Bärchen Beer Garden","Le Bouillon","Mama's Pizza","Spezia"],
 f:["Warren Buffett lives and works in Omaha","The Henry Doorly Zoo is often ranked the best in the world","The Reuben sandwich may have been invented here","Swanson introduced the TV dinner here in 1953","The College World Series has been here since 1950","Boys Town was founded nearby in 1917","Offutt AFB is home to US Strategic Command","Union Pacific is headquartered here","Omaha Steaks started here in 1917","Lewis and Clark held councils with tribes nearby"]},
-{c:"DTW",n:"Detroit",s:"MI",r:"mw",t:["F"],
+{c:"DTW",n:"Detroit",s:"MI",r:"mw",t:[],
 d:["Henry Ford Museum & Greenfield Village","Detroit Institute of Arts|Rivera murals","Motown Museum","Eastern Market|Saturdays","Detroit Riverwalk","Belle Isle","Tigers game at Comerica Park","Guardian Building","Fox Theatre","Michigan Central Station"],
 e:["Lafayette & American Coney Island|Pick a side","Buddy's Pizza|Original Detroit-style","Supino Pizzeria","Selden Standard","Slows Bar BQ","Al Ameer (Dearborn)","Shatila Bakery","Hudson Café","Joe Muer Seafood","Mexicantown taquerias"],
 f:["Detroit is the 'Motor City'","Motown Records started here in 1959","Detroit-style pizza began at Buddy's in 1946","Detroit is north of Windsor, Canada","Lafayette and American Coney sit side by side","Henry Ford's assembly line changed manufacturing","Belle Isle is larger than Central Park","Dearborn has one of the largest Arab American communities","Vernors ginger ale is from Detroit","Southwest nonstops from AUS begin March 11, 2027"]}
@@ -577,45 +596,71 @@ f:["Puerto Rico is a US territory — no passport needed","The piña colada was 
 
 let SCHED={"ABQ":{"b":"1–4/d","o":"1–4/d"},"AMA":{"o":"1/d","b":"1/d"},"DAL":{"o":"4–7/d","b":"4–7/d"},"ELP":{"o":"2–4/d","b":"2–4/d"},"HRL":{"o":"1–3/d","b":"1–3/d"},"HOU":{"o":"3/d","b":"3–4/d"},"LBB":{"o":"1–2/d","b":"1/d"},"MAF":{"o":"1/d","b":"1/d"},"OKC":{"o":"1/d","b":"1/d"},"TUL":{"o":"1/d","b":"1/d"},"PHX":{"o":"3–8/d","b":"3–8/d"},"LAS":{"o":"3–8/d","b":"3–8/d"},"BUR":{"o":"1/d","b":"1/d"},"LGB":{"o":"1/d","b":"1/d"},"LAX":{"o":"2–4/d","b":"2–4/d"},"ONT":{"o":"1/d","b":"1/d"},"SNA":{"o":"1/d","b":"1/d"},"SAN":{"o":"2–5/d","b":"2–5/d"},"OAK":{"o":"1/d","b":"1/d"},"SFO":{"o":"1–2/d","b":"1–2/d"},"SJC":{"o":"1–4/d","b":"1–3/d"},"SMF":{"o":"1/d","b":"1/d"},"SEA":{"o":"1/d","b":"1/d"},"PDX":{"o":"? Begins in 2027-06-03","b":"? Begins in 2027-06-03"},"PSP":{"o":"? Begins in 2026-11-21","b":"? Begins in 2026-11-21"},"RNO":{"o":"1/d","b":"1/d"},"STS":{"b":"?","o":"?"},"DEN":{"o":"3–9/d","b":"3–8/d"},"SLC":{"o":"1–2/d","b":"1–2/d"},"BZN":{"o":"? Begins in 2027-06-05","b":"? Begins in 2027-06-05"},"HDN":{"o":"1/d Begins in 2027-03-11","b":"1/d Begins in 2027-03-11"},"MTJ":{"o":"1/d Begins in 2027-03-11","b":"1/d Begins in 2027-03-11"},"MDW":{"o":"3–5/d","b":"3–5/d"},"CVG":{"o":"1/d","b":"1/d"},"CMH":{"o":"1–2/d","b":"1–2/d"},"IND":{"o":"1–3/d","b":"1–3/d"},"MCI":{"o":"1–3/d","b":"1–3/d"},"MKE":{"o":"1/d","b":"1/d"},"MSP":{"o":"1/d","b":"1/d"},"STL":{"o":"1–3/d","b":"1–3/d"},"OMA":{"o":"1/d Begins in 2026-11-21","b":"1/d Begins in 2026-11-21"},"DTW":{"o":"? Begins in 2027-03-11","b":"? Begins in 2027-03-11"},"ATL":{"o":"1–3/d","b":"1–3/d"},"MEM":{"o":"1/d","b":"1/d"},"BNA":{"o":"3–8/d","b":"3–9/d"},"MSY":{"o":"3–5/d","b":"3–5/d"},"RDU":{"o":"1–2/d","b":"1–2/d"},"CHS":{"o":"1/d Begins in 2027-03-11","b":"1/d Begins in 2027-03-11"},"TYS":{"o":"1/w","b":"1/w"},"SAV":{"o":"3/w Begins in 2027-06-05","b":"3/w Begins in 2027-06-05"},"FLL":{"o":"1/d","b":"1/d"},"JAX":{"o":"1/d","b":"1/d"},"MIA":{"o":"1/d","b":"1/d"},"MCO":{"o":"3–6/d","b":"3–7/d"},"TPA":{"o":"2–4/d","b":"2–5/d"},"RSW":{"o":"? Begins in 2027-03-13","b":"? Begins in 2027-03-13"},"ECP":{"o":"1/d","b":"1/d"},"PNS":{"o":"?","b":"?"},"VPS":{"o":"?","b":"?"},"SRQ":{"o":"? Begins in 2027-06-05","b":"? Begins in 2027-06-05"},"BWI":{"o":"2–5/d","b":"2–4/d"},"BOS":{"o":"1/d","b":"1/d"},"PIT":{"o":"1/d","b":"1/d"},"DCA":{"o":"1/d","b":"1/d"},"CUN":{"o":"1/d","b":"1/d"},"SJD":{"o":"1/d","b":"1/d"},"PVR":{"o":"1/d Begins in 2026-11-21","b":"1/d Begins in 2026-11-21"},"LIR":{"o":"3/w Begins in 2027-06-05","b":"3/w Begins in 2027-06-05"},"SJO":{"o":"3/w Begins in 2027-03-13","b":"3/w Begins in 2027-03-13"},"NAS":{"o":"3/w Begins in 2027-06-05","b":"3/w Begins in 2027-06-05"},"PUJ":{"o":"3/w Begins in 2027-06-05","b":"3/w Begins in 2027-06-05"},"SJU":{"o":"3/w Begins in 2026-11-07","b":"3/w Begins in 2026-11-07"}};
 let SCHED_CHECKED="Oct 15, 2026";
-function schedFmt(s){
+const MON=["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
+const isoDay=d=>{const n=d||new Date();return n.getFullYear()+"-"+String(n.getMonth()+1).padStart(2,"0")+"-"+String(n.getDate()).padStart(2,"0")};
+const niceDate=iso=>`${MON[+iso.slice(5,7)-1]} ${+iso.slice(8,10)}, ${iso.slice(0,4)}`;
+const shortDate=iso=>`${MON[+iso.slice(5,7)-1]} ${+iso.slice(8,10)}${iso.slice(0,4)!==travelDate.slice(0,4)?" '"+iso.slice(2,4):""}`;
+let travelDate=isoDay();
+try{const t=localStorage.getItem("aus-travel-date");if(t&&t>=isoDay())travelDate=t}catch(e){}
+// Parse one schedule string, e.g. "1–4/d", "3/w Begins in 2027-06-05", "? Begins in 2027-03-11", "?"
+function schedParse(s){
+  const m=(s||"").match(/^([\d–?]+)(?:\/(d|w))?(?: Begins in (\d{4}-\d{2}-\d{2}))?/);
+  if(!m)return {count:null,unit:null,start:null};
+  return {count:m[1]==="?"?null:m[1],unit:m[2]||null,start:m[3]||null};
+}
+// Route status on the chosen travel date: flying | later (start date ahead) | none (no schedule published)
+function routeStatus(c,date){
+  date=date||travelDate;
+  const p=schedParse((SCHED[c]||{}).o);
+  if(p.start&&p.start>date)return {k:"later",start:p.start,count:p.count,unit:p.unit};
+  if(!p.count&&!p.start)return {k:"none"};
+  return {k:"flying",count:p.count,unit:p.unit};
+}
+function schedFmt(s,date){
+  date=date||travelDate;
   if(!s)return {big:"–",sub:"No schedule data"};
-  const m=s.match(/^([\d–?]+)(?:\/(d|w))?(?: Begins in (\d{4})-(\d{2})-(\d{2}))?/);
-  const mon=["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
-  const start=m&&m[3]?`Restarts ${mon[+m[4]-1]} ${+m[5]}, ${m[3]}`:"";
-  if(!m||m[1]==="?")return {big:"Off season",sub:start||"Not on the schedule right now"};
-  const n=m[1], unit=m[2]==="w"?(n==="1"?"flight a week":"flights a week"):(n==="1"?"flight a day":"flights a day");
-  return {big:n,sub:unit+(start?" · "+start:"")};
+  const p=schedParse(s);
+  const unit=n=>p.unit==="w"?(n==="1"?"flight a week":"flights a week"):(n==="1"?"flight a day":"flights a day");
+  if(p.start&&p.start>date)return {big:"Not yet",sub:`Starts ${niceDate(p.start)}`+(p.count?` · then ${p.count} ${unit(p.count)}`:"")};
+  if(!p.count)return p.start?{big:"–",sub:"Scheduled, count not published yet"}:{big:"–",sub:"No current Southwest schedule found"};
+  return {big:p.count,sub:unit(p.count)};
 }
 
 const REG=[["tx","Texas & Southwest"],["west","West Coast"],["mtn","Mountain West"],["mw","Midwest"],["south","South"],["fl","Florida"],["ne","Northeast & Mid-Atlantic"],["intl","Mexico, Central America & Caribbean"]];
-const TAG={S:"Seas",N:"New",P:"Pass",F:"2027"};
+const TAG={S:"Seas",N:"New",P:"Pass"};
 const $=s=>document.querySelector(s);
 let filter="all",q="",cur=null,tab="d";
 const closed=new Set();
 const ratings={};   // code -> number 0..5
-const notes={};
+const notes={};     // code -> {text, at}
 const plans={};     // code -> {out, back, at}
+const marks={};     // code -> {visited, fav, at}
 function distMi(c){const a=COORD.AUS,b=COORD[c];if(!b)return 0;const R=3958.8,r=Math.PI/180,dl=(b[1]-a[1])*r,dn=(b[0]-a[0])*r;const h=Math.sin(dl/2)**2+Math.cos(a[1]*r)*Math.cos(b[1]*r)*Math.sin(dn/2)**2;return 2*R*Math.asin(Math.sqrt(h))}
 function flight(c){const mi=distMi(c),east=COORD[c]&&COORD[c][0]>COORD.AUS[0];return {mi:Math.round(mi),out:0.6+mi/(east?520:470),back:0.6+mi/(east?470:520)}}
 const fmtH=h=>(Math.round(h*10)/10).toFixed(1)+" hours";
-function swUrl(from,to){let d="";try{const n=new Date();d=n.getFullYear()+"-"+String(n.getMonth()+1).padStart(2,"0")+"-"+String(n.getDate()).padStart(2,"0")}catch(e){}
-  return `https://www.southwest.com/air/booking/select.html?adultPassengersCount=1&departureDate=${d}&destinationAirportCode=${to}&originationAirportCode=${from}&returnDate=&tripType=oneway`}     // code -> {text, at}
+function swUrl(from,to){return `https://www.southwest.com/air/booking/select.html?adultPassengersCount=1&departureDate=${travelDate}&destinationAirportCode=${to}&originationAirportCode=${from}&returnDate=&tripType=oneway`}
 let db=null, mode="loading"; // "shared" | "local" | "loading"
-const esc=s=>String(s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
-const tagsHtml=t=>t.length?`<span class="tags">${t.map(x=>`<i class="tag t-${x}">${TAG[x]}</i>`).join("")}</span>`:"";
+const esc=s=>String(s).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+function statusTag(c){const s=routeStatus(c);return s.k==="later"?`<i class="tag t-F">Starts ${shortDate(s.start)}</i>`:s.k==="none"?`<i class="tag t-X">No schedule</i>`:""}
+const tagsHtml=(t,c)=>{const extra=c?statusTag(c):"";return (t.length||extra)?`<span class="tags">${t.map(x=>`<i class="tag t-${x}">${TAG[x]}</i>`).join("")}${extra}</span>`:""};
 const STAR='<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2.8l2.8 5.9 6.4.8-4.7 4.4 1.2 6.4L12 17.2l-5.7 3.1 1.2-6.4-4.7-4.4 6.4-.8z"/></svg>';
 function starsHtml(v){
   const pct=v==null?0:(v/5*100);
   return `<span class="stars" role="img" aria-label="${v==null?"Not rated yet":v+" out of 5 stars"}"><span class="base">${STAR.repeat(5)}</span><span class="fill" style="width:${pct}%">${STAR.repeat(5)}</span></span>`;
 }
 const hasR=c=>typeof ratings[c]==="number";
+// "Been there" is its own flag; a city you rated counts as visited until you untick it.
+const visited=c=>{const m=marks[c];return m&&typeof m.visited==="boolean"?m.visited:hasR(c)};
+const isFav=c=>!!(marks[c]&&marks[c].fav);
 
 function match(x){
-  if(filter==="yr"&&(x.t.includes("S")||x.t.includes("F")))return false;
+  const st=routeStatus(x.c).k;
+  if(filter==="flying"&&st!=="flying")return false;
   if(filter==="S"&&!x.t.includes("S"))return false;
   if(filter==="nopp"&&x.t.includes("P"))return false;
-  if(filter==="rated"&&!hasR(x.c))return false;
-  if(filter==="unrated"&&hasR(x.c))return false;
+  if(filter==="fav"&&!isFav(x.c))return false;
+  if(filter==="rated"&&!visited(x.c))return false;
+  if(filter==="unrated"&&visited(x.c))return false;
   if(q){const h=(x.c+" "+x.n+" "+x.s).toLowerCase();if(!h.includes(q))return false}
   return true;
 }
@@ -627,7 +672,7 @@ function renderTree(){
     const isClosed=closed.has(k)&&!q;
     html+=`<section class="branch${isClosed?" closed":""}" data-r="${k}">
       <button class="bhead" aria-expanded="${!isClosed}"><h2>${label}</h2><span class="bcount">${list.length}</span><span class="caret" aria-hidden="true">▾</span></button>
-      <div class="cities">${list.map(x=>`<button class="city" data-c="${x.c}" aria-current="${!!(cur&&cur.c===x.c)}"><span class="crow"><span class="code">${x.c}</span>${starsHtml(hasR(x.c)?ratings[x.c]:null)}${hasR(x.c)?`<span class="rnum">${ratings[x.c]}</span>`:""}</span><span class="nm">${esc(x.n)}${x.s?", "+esc(x.s):""}</span><span class="ft">(${fmtH(flight(x.c).out)})</span>${tagsHtml(x.t)}</button>`).join("")}</div>
+      <div class="cities">${list.map(x=>`<button class="city" data-c="${x.c}" aria-current="${!!(cur&&cur.c===x.c)}"><span class="crow"><span class="code">${x.c}</span>${starsHtml(hasR(x.c)?ratings[x.c]:null)}${hasR(x.c)?`<span class="rnum">${ratings[x.c]}</span>`:""}${isFav(x.c)?`<span class="favdot" aria-label="Favorite">♥</span>`:""}${visited(x.c)&&!hasR(x.c)?`<span class="visdot" aria-label="Been there">✓</span>`:""}</span><span class="nm">${esc(x.n)}${x.s?", "+esc(x.s):""}</span><span class="ft">(${fmtH(flight(x.c).out)})</span>${tagsHtml(x.t,x.c)}</button>`).join("")}</div>
     </section>`;
   }
   $("#tree").innerHTML=html||`<p class="empty">No destinations match. Clear the search or pick another filter.</p>`;
@@ -642,11 +687,13 @@ function rateHtml(c){
   for(let i=1;i<=10;i++){const val=i/2;hits+=`<button class="hit" style="left:${(i-1)*10}%" data-v="${val}" aria-label="Rate ${val} stars"></button>`}
   return `<span class="rinput">${starsHtml(v)}${hits}</span>
     <span class="rval${v==null?" un":""}">${v==null?"Not rated yet":v.toFixed(1)}</span>
-    <button class="mini" data-v="0">0</button>${v!=null?`<button class="mini" data-clear="1">Clear</button>`:""}`;
+    <button class="mini" data-v="0">0</button>${v!=null?`<button class="mini" data-clear="1">Clear</button>`:""}
+    <span class="markrow"><button class="mark" data-mark="visited" aria-pressed="${visited(c)}">✓ Been there</button><button class="mark fav" data-mark="fav" aria-pressed="${isFav(c)}">♥ Favorite</button></span>`;
 }
 function updateRateUI(){ if(!cur)return; const r=$("#rate"); if(r) r.innerHTML=rateHtml(cur.c) }
 
 function fmtDate(t){try{return new Date(t).toLocaleDateString(undefined,{month:"short",day:"numeric",year:"numeric"})}catch(e){return ""}}
+function toast(msg,isErr){const t=$("#toast");if(!t)return;t.textContent=msg;t.classList.toggle("err",!!isErr);t.hidden=false;clearTimeout(toast._t);toast._t=setTimeout(()=>{t.hidden=true},isErr?6000:2500)}
 function renderPanel(){
   const p=$("#panel");
   if(!cur){p.innerHTML=`<div class="grab"></div><p class="placeholder">Pick a destination from the tree.</p>`;return}
@@ -657,16 +704,17 @@ function renderPanel(){
       <textarea id="notes" placeholder="e.g. Gate agents at ${x.c} were great about standby. Next time try…">${esc(notes[x.c]?.text||"")}</textarea>
       <p class="nstat" id="nstat">${noteStatus()}</p></div>`;
   } else if(tab==="p"){
-    const ft=flight(x.c), pl=plans[x.c]||{}, v=n=>n==null?"":n;
+    const ft=flight(x.c), pl=plans[x.c]||{}, v=n=>n==null?"":n, st=routeStatus(x.c);
     body=`<div class="plan">
+      ${st.k!=="flying"?`<p class="pwarn">${st.k==="later"?`Southwest doesn't fly this route on ${niceDate(travelDate)}. It starts ${niceDate(st.start)}.`:`No current Southwest schedule was found for this route. Check southwest.com before planning around it.`}</p>`:""}
       <div class="pgrid">
         <div class="pcell"><span class="plbl">AUS → ${x.c}</span><span class="pval">${fmtH(ft.out)}</span></div>
         <div class="pcell"><span class="plbl">${x.c} → AUS</span><span class="pval">${fmtH(ft.back)}</span></div>
       </div>
-      <p class="psub">${ft.mi.toLocaleString()} miles each way. Typical flight times, estimated from distance and prevailing winds. The schedule shows exact times.</p>
-      <h4 class="ph">Southwest nonstops</h4>
+      <p class="psub">${ft.mi.toLocaleString()} miles each way. Rough flight times from distance and typical winds, not scheduled times; Southwest's schedule shows the real ones.</p>
+      <h4 class="ph">Southwest nonstops on ${niceDate(travelDate)}</h4>
       <div class="pgrid">${(()=>{const S=SCHED[x.c]||{},o=schedFmt(S.o),r=schedFmt(S.b);return `<div class="pcell"><span class="plbl">AUS → ${x.c}</span><span class="pval">${o.big}</span><span class="psub">${o.sub}</span></div><div class="pcell"><span class="plbl">${x.c} → AUS</span><span class="pval">${r.big}</span><span class="psub">${r.sub}</span></div>`})()}</div>
-      <p class="psub">From published schedules, updated ${SCHED_CHECKED}. Ranges mean the count changes by day of the week.</p>
+      <p class="psub">From published schedules, updated ${SCHED_CHECKED}. Ranges mean the count changes by day of the week. These are scheduled flights, not open seats.</p>
       <h4 class="ph">Your latest count</h4>
       <p class="psub">Optional. Add what you see on Southwest when you plan a trip.</p>
       <div class="pgrid">
@@ -674,8 +722,8 @@ function renderPanel(){
         <label class="pcell" for="pl-back"><span class="plbl">${x.c} → AUS</span><input id="pl-back" class="pin" type="number" inputmode="numeric" min="0" max="40" step="1" value="${v(pl.back)}" placeholder="–"></label>
       </div>
       <p class="nstat" id="pstat">${planStatus()}</p>
-      <div class="plinks"><a class="plink" href="${swUrl("AUS",x.c)}" target="_blank" rel="noopener">AUS → ${x.c} flights today on southwest.com ↗</a>
-      <a class="plink" href="${swUrl(x.c,"AUS")}" target="_blank" rel="noopener">${x.c} → AUS flights today ↗</a></div>
+      <div class="plinks"><a class="plink" href="${swUrl("AUS",x.c)}" target="_blank" rel="noopener">AUS → ${x.c} flights on ${shortDate(travelDate)} at southwest.com ↗</a>
+      <a class="plink" href="${swUrl(x.c,"AUS")}" target="_blank" rel="noopener">${x.c} → AUS flights on ${shortDate(travelDate)} ↗</a></div>
       <p class="psub">More flights a day means more chances if the first one fills up. Check the return too, so you don't get stuck.</p>
     </div>`;
   } else {
@@ -685,7 +733,7 @@ function renderPanel(){
   p.innerHTML=`<div class="grab"></div>
     <div class="board"><span class="big">${x.c}</span><span class="route">AUS → ${x.c} · nonstop</span><button class="closebtn" id="close">Close</button></div>
     <div class="rate" id="rate">${rateHtml(x.c)}</div>
-    <h3>${esc(x.n)}</h3><p class="where">${esc(x.s)} ${tagsHtml(x.t)}</p>
+    <h3>${esc(x.n)}</h3><p class="where">${esc(x.s)} ${tagsHtml(x.t,x.c)}</p>
     <div class="tabs" role="tablist">${["d","e","f","p","n"].map(k=>`<button class="tab" role="tab" data-t="${k}" aria-selected="${tab===k}">${labels[k]}${k==="n"&&notes[x.c]?.text?" •":""}</button>`).join("")}</div>
     ${body}`;
 }
@@ -693,10 +741,13 @@ function renderPanel(){
 /* ---- storage: saved on this phone first, synced through Supabase when signed in and online ---- */
 const CFG=window.ATLAS_CONFIG||{};
 const LSKEY="aus-atlas-store-v1";
-let store={ratings:{},notes:{},plan:{},pending:[],lastSync:0};
-let sb=null, session=null, syncing=false, syncTimer=null;
+let store={ratings:{},notes:{},plan:{},marks:{},pending:[],lastSync:0};
+let sb=null, session=null, syncing=false, syncTimer=null, syncErr=null, retryTimer=null;
 try{const s=JSON.parse(localStorage.getItem(LSKEY)||"null");if(s)store=Object.assign(store,s)}catch(e){}
-function saveLocal(){try{localStorage.setItem(LSKEY,JSON.stringify(store))}catch(e){}}
+store.marks=store.marks||{};
+let localSaveOk=true;
+function saveLocal(){try{localStorage.setItem(LSKEY,JSON.stringify(store));if(!localSaveOk){localSaveOk=true;toast("Saving on this phone works again.")}return true}
+  catch(e){localSaveOk=false;toast("Couldn't save on this phone. Storage may be full or Private Browsing is on. Changes will be lost if you close the app.",true);return false}}
 function applyStore(){
   for(const k of Object.keys(ratings))delete ratings[k];
   for(const [c,r] of Object.entries(store.ratings)) if(typeof r.v==="number") ratings[c]=r.v;
@@ -706,6 +757,8 @@ function applyStore(){
   const ae=document.activeElement, editingPlan=ae&&(ae.id==="pl-out"||ae.id==="pl-back");
   for(const k of Object.keys(plans)) if(!(editingPlan&&cur&&k===cur.c)) delete plans[k];
   for(const [c,p] of Object.entries(store.plan)) if((p.out!=null||p.back!=null)&&!(editingPlan&&cur&&c===cur.c)) plans[c]={out:p.out,back:p.back,at:p.at};
+  for(const k of Object.keys(marks)) delete marks[k];
+  for(const [c,m] of Object.entries(store.marks)) marks[c]={visited:typeof m.visited==="boolean"?m.visited:undefined,fav:!!m.fav,at:m.at};
 }
 function refreshUI(){
   renderTree(); updateRateUI();
@@ -720,42 +773,70 @@ function record(kind,code,body){
   saveLocal(); syncSoon(); syncBadge();
 }
 function setRating(c,v){
+  if(v!=null&&marks[c]&&marks[c].visited===false)setMark(c,"visited",true); // rating a place means you've been
   if(v==null)delete ratings[c]; else ratings[c]=v;
   record("ratings",c,{v:v==null?null:v});
   renderTree(); updateRateUI();
 }
-let noteTimer=null;
-function queueNote(c,text){
-  notes[c]={text,at:Date.now()};
-  const s=$("#nstat"); if(s){s.classList.remove("err");s.textContent="Saving…"}
-  clearTimeout(noteTimer); noteTimer=setTimeout(()=>saveNote(c,text),600);
+// Only the flag you touched is stored; "Been there" stays automatic (follows the rating) until you set it yourself.
+function setMark(c,field,val){
+  const m=Object.assign({},marks[c]||{});
+  m[field]=val; marks[c]=m;
+  record("marks",c,{visited:typeof m.visited==="boolean"?m.visited:null,fav:!!m.fav});
+  renderTree(); updateRateUI();
 }
-function saveNote(c,text){
-  noteTimer=null; if(!text)delete notes[c];
+// One debounce per destination, so editing a second city never cancels the first city's save.
+const planT={}, noteT={}, pendingPlan={}, pendingNote={};
+function queueNote(c,text){
+  notes[c]={text,at:Date.now()}; pendingNote[c]=text;
+  const s=$("#nstat"); if(s){s.classList.remove("err");s.textContent="Saving…"}
+  clearTimeout(noteT[c]); noteT[c]=setTimeout(()=>saveNote(c),600);
+}
+function saveNote(c){
+  clearTimeout(noteT[c]); delete noteT[c];
+  if(!(c in pendingNote))return; const text=pendingNote[c]; delete pendingNote[c];
+  if(!text)delete notes[c];
   record("notes",c,{text:text||""});
   const s=$("#nstat"); if(s&&cur&&cur.c===c)s.textContent=noteStatus();
   const t=document.querySelector('.tab[data-t="n"]'); if(t&&cur&&cur.c===c) t.textContent="Notes"+(text?" •":"");
 }
 function planStatus(){const p=cur&&plans[cur.c];
-  return p&&(p.out!=null||p.back!=null)?`Your count, updated ${fmtDate(p.at)}.`:"Optional. Add what you see when you plan a trip."}
-let planTimer=null;
+  if(cur&&pendingPlan[cur.c])return "Saving…";
+  return p&&(p.out!=null||p.back!=null)?`Your count, updated ${fmtDate(p.at)}. ${syncWord()}`:"Optional. Add what you see when you plan a trip."}
+function readPlanInputs(){const g=id=>{const el=$(id);if(!el||el.value==="")return null;const n=Math.max(0,Math.min(40,Math.round(+el.value)));return isFinite(n)?n:null};return {out:g("#pl-out"),back:g("#pl-back")}}
 function queuePlan(c){
-  const g=id=>{const el=$(id);if(!el||el.value==="")return null;const n=Math.max(0,Math.min(40,Math.round(+el.value)));return isFinite(n)?n:null};
-  const out=g("#pl-out"),back=g("#pl-back");
+  const {out,back}=readPlanInputs();
   if(out==null&&back==null)delete plans[c]; else plans[c]={out,back,at:Date.now()};
-  clearTimeout(planTimer);
-  planTimer=setTimeout(()=>{record("plan",c,{out,back});const s=$("#pstat");if(s&&cur&&cur.c===c)s.textContent=planStatus()},600);
+  pendingPlan[c]={out,back};
+  const s=$("#pstat"); if(s){s.classList.remove("err");s.textContent="Saving…"}
+  clearTimeout(planT[c]); planT[c]=setTimeout(()=>savePlan(c),600);
+}
+function savePlan(c){
+  clearTimeout(planT[c]); delete planT[c];
+  const body=pendingPlan[c]; if(!body)return; delete pendingPlan[c];
+  record("plan",c,body);
+  const s=$("#pstat"); if(s&&cur&&cur.c===c)s.textContent=planStatus();
+}
+function flushPending(){ for(const c of Object.keys(pendingPlan))savePlan(c); for(const c of Object.keys(pendingNote))saveNote(c) }
+function isPending(kind,c){return store.pending.some(p=>p.kind===kind&&p.code===c)}
+function syncWord(kind){
+  if(!localSaveOk)return "Not saved on this phone.";
+  if(!session)return "Saved on this phone.";
+  if(syncErr)return "Saved on this phone; sync failed, will retry.";
+  return "Saved and synced.";
 }
 function noteStatus(){
   const n=cur&&notes[cur.c];
-  const where=session?"Saved on this phone and synced":"Saved on this phone";
-  return n&&n.text?`${where} · last edited ${fmtDate(n.at)}`:where;
+  if(cur&&pendingNote[cur.c]!=null)return "Saving…";
+  if(!n||!n.text)return session?"Notes save on this phone and sync.":"Notes save on this phone.";
+  const waiting=session&&isPending("notes",cur.c);
+  return `${waiting?(navigator.onLine?(syncErr?"Saved on this phone; sync failed, will retry":"Saved on this phone, syncing…"):"Saved on this phone, will sync when online"):syncWord().replace(/\.$/,"")} · last edited ${fmtDate(n.at)}`;
 }
 
 /* Supabase sync: last edit wins, per airport and per kind */
-const TABLE={ratings:"ratings",notes:"notes",plan:"plan"};
-function rowOf(kind,code,b){return kind==="ratings"?{code,v:b.v,at:b.at}:kind==="notes"?{code,text:b.text,at:b.at}:{code,out:b.out,back:b.back,at:b.at}}
-function bodyOf(kind,r){return kind==="ratings"?{v:r.v==null?null:+r.v,at:+r.at}:kind==="notes"?{text:r.text||"",at:+r.at}:{out:r.out,back:r.back,at:+r.at}}
+const TABLE={ratings:"ratings",notes:"notes",plan:"plan",marks:"marks"};
+function rowOf(kind,code,b){return kind==="ratings"?{code,v:b.v,at:b.at}:kind==="notes"?{code,text:b.text,at:b.at}:kind==="marks"?{code,visited:b.visited,fav:!!b.fav,at:b.at}:{code,out:b.out,back:b.back,at:b.at}}
+function bodyOf(kind,r){return kind==="ratings"?{v:r.v==null?null:+r.v,at:+r.at}:kind==="notes"?{text:r.text||"",at:+r.at}:kind==="marks"?{visited:r.visited==null?null:!!r.visited,fav:!!r.fav,at:+r.at}:{out:r.out,back:r.back,at:+r.at}}
 function syncSoon(){clearTimeout(syncTimer);syncTimer=setTimeout(sync,1200)}
 async function sync(){
   if(!sb||!session||syncing||!navigator.onLine){syncBadge();return}
@@ -767,22 +848,24 @@ async function sync(){
       remote[k]={}; for(const r of data) remote[k][r.code]=r;
     }
     // push local edits that are newer than the server copy
-    const keep=[];
+    const keep=[]; let failed=null;
     for(const p of store.pending){
       const local=store[p.kind][p.code], rem=remote[p.kind][p.code];
       if(!local)continue;
       if(rem&&+rem.at>local.at){continue}
       const {error}=await sb.from(TABLE[p.kind]).upsert(rowOf(p.kind,p.code,local));
-      if(error){keep.push(p)} else remote[p.kind][p.code]=rowOf(p.kind,p.code,local);
+      if(error){keep.push(p);failed=error} else remote[p.kind][p.code]=rowOf(p.kind,p.code,local);
     }
     store.pending=keep;
+    syncErr=failed?(failed.message||"Some changes were refused"):null;
+    if(failed){clearTimeout(retryTimer);retryTimer=setTimeout(()=>{if(syncErr)sync()},30000)}
     // pull anything newer from the server
     for(const k of Object.keys(TABLE)) for(const [c,r] of Object.entries(remote[k])){
       const local=store[k][c]; if(!local||+r.at>local.at) store[k][c]=bodyOf(k,r);
     }
     store.lastSync=Date.now(); saveLocal(); applyStore(); refreshUI();
-  }catch(e){ console.warn("sync failed",e) }
-  finally{ syncing=false; syncBadge() }
+  }catch(e){ console.warn("sync failed",e); syncErr=(e&&e.message)||"Couldn't reach the sync service"; clearTimeout(retryTimer); retryTimer=setTimeout(()=>{if(syncErr)sync()},30000) }
+  finally{ syncing=false; syncBadge(); const s=$("#nstat");if(s&&cur&&tab==="n"&&document.activeElement!==$("#notes"))s.textContent=noteStatus(); const ps=$("#pstat");if(ps&&cur&&tab==="p")ps.textContent=planStatus() }
 }
 function ago(t){if(!t)return "never";const m=Math.round((Date.now()-t)/60000);return m<1?"just now":m<60?m+" min ago":m<1440?Math.round(m/60)+" hr ago":fmtDate(t)}
 function syncBadge(){
@@ -792,6 +875,7 @@ function syncBadge(){
   else if(!session){txt="Not signed in";st="off"}
   else if(!navigator.onLine){txt=store.pending.length?`Offline · ${store.pending.length} to sync`:"Offline";st="warn"}
   else if(syncing){txt="Syncing…";st="on"}
+  else if(syncErr){txt=store.pending.length?`Sync failed · ${store.pending.length} waiting · tap`:"Sync failed · tap to retry";st="warn"}
   else if(store.pending.length){txt=`${store.pending.length} waiting to sync`;st="warn"}
   else {txt="Synced "+ago(store.lastSync);st="on"}
   b.textContent=txt; b.dataset.state=st;
@@ -800,7 +884,7 @@ async function initStore(){
   mode="local"; applyStore(); refreshUI();
   if(!CFG.supabaseUrl||!CFG.supabaseKey||!CFG.sharedEmail)return;
   try{
-    if(!window.supabase)await loadScript("https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js");
+    if(!window.supabase)await loadScript(SRC.supabase,SRI.supabase);
     sb=window.supabase.createClient(CFG.supabaseUrl,CFG.supabaseKey,{auth:{persistSession:true,autoRefreshToken:true,storageKey:"aus-atlas-auth"}});
     const {data}=await sb.auth.getSession(); session=data.session||null;
     sb.auth.onAuthStateChange((ev,s)=>{session=s||null;syncBadge();if(session)sync();if(ev==="SIGNED_OUT")showLock("Signed out. The password may have changed.")});
@@ -830,25 +914,53 @@ async function tryUnlock(){
   const {data,error}=await sb.auth.signInWithPassword({email:CFG.sharedEmail,password:pw});
   if(error){m.textContent=navigator.onLine?"That password didn't work.":"You're offline. Connect once to sign in.";return}
   session=data.session; hideLock();
-  store.pending=[...new Set([...store.pending.map(p=>p.kind+"|"+p.code),...["ratings","notes","plan"].flatMap(k=>Object.keys(store[k]).map(c=>k+"|"+c))])].map(x=>{const [kind,code]=x.split("|");return {kind,code}});
+  store.pending=[...new Set([...store.pending.map(p=>p.kind+"|"+p.code),...["ratings","notes","plan","marks"].flatMap(k=>Object.keys(store[k]).map(c=>k+"|"+c))])].map(x=>{const [kind,code]=x.split("|");return {kind,code}});
   saveLocal(); sync();
 }
 function openSync(){$("#syncsheet").hidden=false;$("#syncscrim").hidden=false;renderSync()}
 function closeSync(){$("#syncsheet").hidden=true;$("#syncscrim").hidden=true}
+const backupHtml=`<h4 class="ph">Backup</h4><p class="psub">Save a copy of your ratings, notes, favorites and counts, or restore one.</p>
+    <div class="srow"><button class="mini" id="bk-export">Save a backup</button><label class="mini" for="bk-file" style="cursor:pointer">Restore from backup</label><input id="bk-file" type="file" accept="application/json,.json" hidden></div>`;
 function renderSync(){
   const d=$("#syncsheet");
-  if(!CFG.supabaseUrl){d.innerHTML=`<h3>Sync isn't set up yet</h3><p class="psub">Ratings and notes are saved on this phone for now.</p><div class="srow"><button class="mini" id="syncclose">Close</button></div>`;return}
-  d.innerHTML=`<h3>${session?"Sync is on":"Not signed in"}</h3><p class="psub">${session?`Last synced ${ago(store.lastSync)}.${store.pending.length?` ${store.pending.length} change(s) waiting for a connection.`:""}`:"Sign in with the trip password to sync."}</p>
-    <div class="srow">${session?`<button class="dice" id="syncnow">Sync now</button><button class="mini" id="signout">Sign out</button>`:""}<button class="mini" id="syncclose">Close</button></div>`;
+  if(!CFG.supabaseUrl){d.innerHTML=`<h3>Sync isn't set up yet</h3><p class="psub">Ratings and notes are saved on this phone for now.</p>${backupHtml}<div class="srow"><button class="mini" id="syncclose">Close</button></div>`;return}
+  d.innerHTML=`<h3>${session?"Sync is on":"Not signed in"}</h3><p class="psub">${session?`Last synced ${ago(store.lastSync)}.${store.pending.length?` ${store.pending.length} change(s) waiting for a connection.`:""}${syncErr?` Last sync failed: ${esc(syncErr)}. It will retry automatically.`:""}`:"Sign in with the trip password to sync."}</p>
+    <div class="srow">${session?`<button class="dice" id="syncnow">Sync now</button><button class="mini" id="signout">Sign out</button>`:""}<button class="mini" id="syncclose">Close</button></div>${backupHtml}`;
+}
+function exportBackup(){
+  flushPending();
+  const data={app:"aus-standby-atlas",version:1,exported:new Date().toISOString(),ratings:store.ratings,notes:store.notes,plan:store.plan,marks:store.marks};
+  const name=`standby-atlas-backup-${isoDay()}.json`;
+  const file=new File([JSON.stringify(data,null,1)],name,{type:"application/json"});
+  if(navigator.canShare&&navigator.canShare({files:[file]})){navigator.share({files:[file],title:"Standby Atlas backup"}).catch(()=>{});return}
+  const a=document.createElement("a");a.href=URL.createObjectURL(file);a.download=name;document.body.appendChild(a);a.click();setTimeout(()=>{URL.revokeObjectURL(a.href);a.remove()},1000);
+}
+async function importBackup(f){
+  try{
+    const data=JSON.parse(await f.text());
+    if(data.app!=="aus-standby-atlas")throw new Error("not a Standby Atlas backup");
+    let n=0;
+    for(const kind of ["ratings","notes","plan","marks"]){
+      for(const [c,b] of Object.entries(data[kind]||{})){
+        if(!D.find(x=>x.c===c)||!b||typeof b.at!=="number")continue;
+        const local=store[kind][c];
+        if(!local||b.at>local.at){store[kind][c]=b;store.pending=store.pending.filter(p=>!(p.kind===kind&&p.code===c));store.pending.push({kind,code:c});n++}
+      }
+    }
+    saveLocal(); applyStore(); refreshUI(); syncSoon(); renderSync();
+    toast(n?`Restored ${n} item${n===1?"":"s"}. Newer changes on this phone were kept.`:"Nothing to restore; this phone already has the same or newer data.");
+  }catch(e){toast("That file couldn't be restored. Pick a backup saved from Standby Atlas.",true)}
 }
 document.addEventListener("click",async e=>{
   const id=e.target.id;
-  if(id==="syncbtn"){openSync();return}
+  if(id==="syncbtn"){if(syncErr&&session&&!syncing)sync();openSync();return}
   if(id==="syncclose"||id==="syncscrim"){closeSync();return}
   if(id==="syncnow"){sync().then(()=>renderSync());return}
   if(id==="signout"){await sb.auth.signOut();session=null;closeSync();syncBadge();showLock("Signed out.");return}
   if(id==="lk-go"){tryUnlock();return}
+  if(id==="bk-export"){exportBackup();return}
 });
+document.addEventListener("change",e=>{if(e.target.id==="bk-file"&&e.target.files[0]){importBackup(e.target.files[0]);e.target.value=""}});
 document.addEventListener("keydown",e=>{if(e.key==="Enter"&&e.target.id==="lk-pw")tryUnlock()});
 
 /* refresh schedule counts when online; keep the last copy for offline */
@@ -865,34 +977,57 @@ async function refreshSchedule(){
 
 /* ---- interaction ---- */
 const mobile=()=>matchMedia("(max-width:959px)").matches;
-function openCity(c){
+let lastOpener=null;
+function openCity(c,opener){
   const next=D.find(x=>x.c===c); if(!next)return;
-  if(noteTimer&&cur){clearTimeout(noteTimer);noteTimer=null;saveNote(cur.c,notes[cur.c]?.text||"")}
-  cur=next;
+  flushPending();
+  cur=next; if(opener)lastOpener=opener;
   try{history.replaceState(null,"","#"+c)}catch(e){}
   renderPanel(); document.querySelectorAll(".city").forEach(b=>b.setAttribute("aria-current",b.dataset.c===c));
   updateMap();
-  if(mobile()){$("#panel").classList.remove("away");$("#scrim").hidden=false;$("#panel").scrollTop=0}
+  if(mobile()){const p=$("#panel");p.classList.remove("away");p.setAttribute("aria-modal","true");p.setAttribute("role","dialog");$("#scrim").hidden=false;p.scrollTop=0;setTimeout(()=>{const b=$("#close");if(b)b.focus()},60)}
 }
-function closePanel(){ if(mobile()){$("#panel").classList.add("away");$("#scrim").hidden=true} }
+function panelOpen(){return mobile()&&!$("#panel").classList.contains("away")}
+function closePanel(){
+  flushPending();
+  if(!mobile())return;
+  const p=$("#panel");p.classList.add("away");p.removeAttribute("aria-modal");p.removeAttribute("role");$("#scrim").hidden=true;
+  const back=lastOpener&&document.body.contains(lastOpener)?lastOpener:document.querySelector(`.city[data-c="${cur?.c}"]`);
+  if(back)back.focus();
+}
 $("#tree").addEventListener("click",e=>{
-  const c=e.target.closest(".city"); if(c){openCity(c.dataset.c);return}
+  const c=e.target.closest(".city"); if(c){openCity(c.dataset.c,c);return}
   const h=e.target.closest(".bhead"); if(h){const k=h.parentElement.dataset.r; closed.has(k)?closed.delete(k):closed.add(k); renderTree()}
 });
 $("#panel").addEventListener("click",e=>{
-  const t=e.target.closest(".tab"); if(t){tab=t.dataset.t;renderPanel();return}
+  const t=e.target.closest(".tab"); if(t){flushPending();tab=t.dataset.t;renderPanel();return}
+  const mk=e.target.closest("[data-mark]"); if(mk&&cur){setMark(cur.c,mk.dataset.mark,mk.getAttribute("aria-pressed")!=="true");return}
   const h=e.target.closest("[data-v]"); if(h&&cur){setRating(cur.c,parseFloat(h.dataset.v));return}
   if(e.target.closest("[data-clear]")&&cur){setRating(cur.c,null);return}
   if(e.target.id==="close")closePanel();
 });
 $("#panel").addEventListener("input",e=>{ if(e.target.id==="notes"&&cur) queueNote(cur.c,e.target.value); if((e.target.id==="pl-out"||e.target.id==="pl-back")&&cur) queuePlan(cur.c) });
+$("#panel").addEventListener("keydown",e=>{
+  if(e.key!=="Tab"||!panelOpen())return;
+  const f=[...$("#panel").querySelectorAll('button,a[href],input,textarea,[tabindex]:not([tabindex="-1"])')].filter(el=>!el.disabled&&el.offsetParent!==null);
+  if(!f.length)return; const first=f[0], last=f.at(-1);
+  if(e.shiftKey&&document.activeElement===first){e.preventDefault();last.focus()} else if(!e.shiftKey&&document.activeElement===last){e.preventDefault();first.focus()}
+});
 $("#scrim").addEventListener("click",closePanel);
-document.addEventListener("keydown",e=>{if(e.key==="Escape")closePanel()});
+document.addEventListener("keydown",e=>{if(e.key!=="Escape")return;const sh=$("#syncsheet");if(sh&&!sh.hidden){sh.hidden=true;const sc=$("#syncscrim");if(sc)sc.hidden=true;return}if(panelOpen())closePanel()});
+addEventListener("pagehide",flushPending);
+document.addEventListener("visibilitychange",()=>{if(document.visibilityState==="hidden")flushPending()});
 $("#q").addEventListener("input",e=>{q=e.target.value.trim().toLowerCase();renderTree()});
 document.querySelectorAll(".chipbtn").forEach(b=>b.addEventListener("click",()=>{
   filter=b.dataset.f; document.querySelectorAll(".chipbtn").forEach(x=>x.setAttribute("aria-pressed",x===b)); renderTree();
 }));
-$("#dice").addEventListener("click",()=>{const pool=D.filter(match);if(pool.length){tab="d";openCity(pool[Math.floor(Math.random()*pool.length)].c)}});
+const td=$("#tdate");
+if(td){td.min=isoDay();td.value=travelDate;td.addEventListener("change",()=>{
+  travelDate=td.value&&td.value>=isoDay()?td.value:isoDay(); td.value=travelDate;
+  try{localStorage.setItem("aus-travel-date",travelDate)}catch(e){}
+  renderTree(); renderPanel();
+})}
+$("#dice").addEventListener("click",e=>{const pool=D.filter(match);if(pool.length){tab="d";openCity(pool[Math.floor(Math.random()*pool.length)].c,e.currentTarget)}});
 
 
 /* ---- map view ---- */
@@ -906,20 +1041,22 @@ BWI:[-76.67,39.18],BOS:[-71.01,42.36],PIT:[-80.23,40.49],DCA:[-77.04,38.85],
 CUN:[-86.87,21.04],SJD:[-109.72,23.15],PVR:[-105.25,20.68],LIR:[-85.54,10.59],SJO:[-84.21,9.99],NAS:[-77.47,25.04],PUJ:[-68.36,18.57],SJU:[-66.00,18.44]};
 const OCEANS=[["Pacific Ocean",-121.5,24.5],["Atlantic Ocean",-66,33],["Gulf of Mexico",-90.6,25.6,"(Gulf of America)"],["Caribbean Sea",-76.5,15.2]];
 const COUNTRIES=[["UNITED STATES",-100.5,41.9,1],["MEXICO",-102.6,24.2,1],["CUBA",-79.4,21.9,1.4],["BAHAMAS",-75.4,23.5,1.7],["DOMINICAN REP.",-70.4,19.25,2],["HAITI",-72.7,18.75,2.6],["JAMAICA",-77.3,18.05,2.4],["PUERTO RICO",-66.4,18.05,3.2],["GUATEMALA",-90.3,15.7,1.9],["BELIZE",-88.6,17.1,2.6],["HONDURAS",-86.7,14.85,1.9],["EL SALVADOR",-88.9,13.6,2.8],["NICARAGUA",-85.2,12.7,1.7],["COSTA RICA",-83.9,9.35,2],["PANAMA",-80.4,8.5,2.2]];
-const SRC={d3:"https://cdnjs.cloudflare.com/ajax/libs/d3/7.9.0/d3.min.js",topo:"https://cdnjs.cloudflare.com/ajax/libs/topojson/3.0.2/topojson.min.js",usa:"https://cdnjs.cloudflare.com/ajax/libs/datamaps/0.5.9/datamaps.usa.min.js",world:"https://cdnjs.cloudflare.com/ajax/libs/datamaps/0.5.9/datamaps.world.hires.min.js"};
+const SRI={d3:"sha384-CjloA8y00+1SDAUkjs099PVfnY2KmDC2BZnws9kh8D/lX1s46w6EPhpXdqMfjK6i",topo:"sha384-9dCJK6nh7skY14HrcvlLYlFga9/MehJjL9ONWRflmiXNRuf8p2jiF4Y5PR881PTq",usa:"sha384-cNEl/wq0qmxPqelavm9QxeMj/4LvNHjeV4gCdboZrqk+5AXvWcSIT2FXeRW2ktGr",world:"sha384-F2JYEkW4R4brGGxIafK0QsMQ9+d7QkxwMXEwfMB/c4j+gSmQ98kRgVlDy170PqaO",supabase:"sha384-0w2KAL2YHP6wKOkUDzkCDGgVvfmHnj02DHeQ6XcHOgTfFsGyonKOpShMH1x6nk9o"};
+const SRC={supabase:"https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js",d3:"https://cdnjs.cloudflare.com/ajax/libs/d3/7.9.0/d3.min.js",topo:"https://cdnjs.cloudflare.com/ajax/libs/topojson/3.0.2/topojson.min.js",usa:"https://cdnjs.cloudflare.com/ajax/libs/datamaps/0.5.9/datamaps.usa.min.js",world:"https://cdnjs.cloudflare.com/ajax/libs/datamaps/0.5.9/datamaps.world.hires.min.js"};
 let view="list", M=null, mapLoading=null, topo=null;
 const reduceMotion=matchMedia("(prefers-reduced-motion: reduce)").matches;
-function loadScript(src){return new Promise((res,rej)=>{const s=document.createElement("script");s.src=src;s.onload=res;s.onerror=()=>rej(new Error(src));document.head.appendChild(s)})}
+// Every outside script is pinned to an exact version and checked against its hash before it runs.
+function loadScript(src,integrity){return new Promise((res,rej)=>{const s=document.createElement("script");s.src=src;if(integrity){s.integrity=integrity;s.crossOrigin="anonymous"}s.onload=res;s.onerror=()=>rej(new Error(src));document.head.appendChild(s)})}
 function ensureMap(){
   if(M)return Promise.resolve();
   if(mapLoading)return mapLoading;
   $("#mapmsg").textContent="Loading map…"; $("#mapmsg").hidden=false;
   mapLoading=(async()=>{
-    if(!window.d3)await loadScript(SRC.d3);
-    if(!window.topojson)await loadScript(SRC.topo);
+    if(!window.d3)await loadScript(SRC.d3,SRI.d3);
+    if(!window.topojson)await loadScript(SRC.topo,SRI.topo);
     if(!topo){
-      await loadScript(SRC.usa); const usa=window.Datamap.prototype.usaTopo;
-      await loadScript(SRC.world); const world=window.Datamap.prototype.worldTopo;
+      await loadScript(SRC.usa,SRI.usa); const usa=window.Datamap.prototype.usaTopo;
+      await loadScript(SRC.world,SRI.world); const world=window.Datamap.prototype.worldTopo;
       topo={usa,world};
     }
     buildMap(); $("#mapmsg").hidden=true;
@@ -992,8 +1129,8 @@ function place(){
 function updateMap(){
   if(!M)return;
   for(const c in M.P){const p=M.P[c],on=match(p.city),sel=!!(cur&&cur.c===c);
-    p.g.classed("dim",!on).classed("rated",hasR(c)).classed("sel",sel);
-    p.g.attr("aria-label",`${c}, ${p.city.n}${hasR(c)?", rated "+ratings[c]:""}`);}
+    p.g.classed("dim",!on).classed("rated",visited(c)).classed("sel",sel);
+    p.g.attr("aria-label",`${c}, ${p.city.n}${hasR(c)?", rated "+ratings[c]:visited(c)?", been there":""}${isFav(c)?", favorite":""}`);}
   M.layer.selectAll(".m-route").each(function(){const c=this.dataset.c;this.classList.toggle("sel",!!(cur&&cur.c===c));this.classList.toggle("dim",!match(M.P[c].city))});
   place();
 }
@@ -1001,7 +1138,7 @@ function tip(c){
   const t=$("#maptip"); if(!c||!M){t.hidden=true;return}
   const p=M.P[c], tr=d3.zoomTransform(M.svg.node()), r=M.svg.node().getBoundingClientRect(), wr=$("#map .mapwrap").getBoundingClientRect();
   const sx=r.width/M.W, x=tr.applyX(p.x)*sx+(r.left-wr.left), y=tr.applyY(p.y)*sx+(r.top-wr.top);
-  t.innerHTML=`<b>${c}</b> ${esc(p.city.n)} · ${fmtH(flight(c).out)}<span class="tipst">${starsHtml(hasR(c)?ratings[c]:null)}${hasR(c)?" "+ratings[c]:" Not yet"}</span>`;
+  t.innerHTML=`<b>${c}</b> ${esc(p.city.n)} · ${fmtH(flight(c).out)}<span class="tipst">${starsHtml(hasR(c)?ratings[c]:null)}${hasR(c)?" "+ratings[c]:visited(c)?" Been there":" Not yet"}${isFav(c)?" ♥":""}</span>`;
   t.hidden=false; t.style.left=Math.min(Math.max(8,x+12),wr.width-t.offsetWidth-8)+"px"; t.style.top=Math.max(8,y-t.offsetHeight-10)+"px";
 }
 function zoomBy(f){ if(M) M.svg.transition().duration(reduceMotion?0:250).call(M.zoom.scaleBy,f) }
@@ -1016,7 +1153,16 @@ document.querySelectorAll(".vbtn").forEach(b=>b.addEventListener("click",()=>set
 $("#zin").addEventListener("click",()=>zoomBy(1.6));
 $("#zout").addEventListener("click",()=>zoomBy(1/1.6));
 $("#zreset").addEventListener("click",zoomReset);
-let rsz=null; addEventListener("resize",()=>{clearTimeout(rsz);rsz=setTimeout(()=>{if(M&&view==="map"){const k=M.k;buildMap()}},250)});
+// Rebuild for a new size but keep the same zoom level and center, so rotating the phone doesn't lose your place.
+let rsz=null; addEventListener("resize",()=>{clearTimeout(rsz);rsz=setTimeout(()=>{
+  if(!M||view!=="map")return;
+  const wrap=$("#map .mapwrap"); if(!wrap)return;
+  const W=Math.max(320,wrap.clientWidth), H=Math.max(320,wrap.clientHeight);
+  if(Math.abs(W-M.W)<2&&Math.abs(H-M.H)<2)return;
+  const t=d3.zoomTransform(M.svg.node()), k=t.k, center=M.proj.invert([t.invertX(M.W/2),t.invertY(M.H/2)]);
+  buildMap();
+  if(k>1.001&&center){const p=M.proj(center);M.svg.call(M.zoom.transform,d3.zoomIdentity.translate(M.W/2-k*p[0],M.H/2-k*p[1]).scale(k))}
+},250)});
 
 renderTree();
 const h=(location.hash||"").slice(1).toUpperCase();

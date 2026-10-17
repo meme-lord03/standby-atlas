@@ -1,5 +1,5 @@
 // AUS Standby Atlas service worker: works offline after the first visit.
-const VERSION = "atlas-v1";
+const VERSION = "atlas-v2";
 const SHELL = ["./", "./index.html", "./config.js", "./manifest.webmanifest", "./data/schedule.json",
   "./icons/icon-192.png", "./icons/icon-512.png", "./icons/apple-touch-icon.png"];
 // Libraries and fonts from other sites, cached so the map and type work offline too.
@@ -16,7 +16,8 @@ self.addEventListener("install", e => {
   e.waitUntil((async () => {
     const c = await caches.open(VERSION);
     await c.addAll(SHELL);
-    await Promise.all(EXTRA.map(u => fetch(u, { mode: "no-cors" }).then(r => c.put(u, r)).catch(() => {})));
+    // Fetched with CORS (not opaque) so the page can verify each script's integrity hash from the cache.
+    await Promise.all(EXTRA.map(u => fetch(u, { mode: "cors", credentials: "omit" }).then(r => { if (r.ok) return c.put(u, r); }).catch(() => {})));
     self.skipWaiting();
   })());
 });
@@ -49,5 +50,5 @@ self.addEventListener("fetch", e => {
     return;
   }
   // Libraries and fonts: saved copy first, network if missing.
-  e.respondWith(caches.match(req).then(hit => hit || fetch(req).then(r => { const copy = r.clone(); caches.open(VERSION).then(c => c.put(req, copy)); return r; })));
+  e.respondWith(caches.match(req.url).then(hit => (hit && hit.type !== "opaque") ? hit : fetch(req).then(r => { if (r.ok && r.type !== "opaque") { const copy = r.clone(); caches.open(VERSION).then(c => c.put(req.url, copy)); } return r; })));
 });
